@@ -1,0 +1,38 @@
+{
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+        120
+    ],
+    // https://rust-analyzer.github.io/manual.html
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.rustfmt.extraArgs": [
+        "+nightly"
+    ],
+    "rust-analyzer.procMacro.ignored": {
+        "async-trait": [
+            "async_trait"
+        ],
+    },
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "evenBetterToml.taplo.configFile.enabled": true,
+    "evenBetterToml.taplo.configFile.path": ".taplo.toml",
+    "markdown.extension.toc.levels": "2..6",
+    "markdown.extension.toc.slugifyMode": "github",
+    "markdownlint.config": {
+        "default": true,
+        "MD013": {
+            "line_length": 120,
+            "heading_line_length": 120,
+            "code_block_line_length": 120
+        },
+        "MD033": {
+            "allowed_elements": [
+                "details",
+                "summary"
+            ]
+        }
+    }
+}

@@ -1,0 +1,24 @@
+[workspace]
+members = ["model-mapper", "model-mapper-macros"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/lasantosr/model-mapper"
+keywords = ["model", "entity", "mapper"]
+categories = ["development-tools", "rust-patterns"]
+
+[workspace.dependencies]
+model-mapper-macros = { version = "=0.1.0", path = "./model-mapper-macros" }
+
+anyhow            = "1"
+chrono            = "0.4"
+darling           = "0.20"
+macro-field-utils = "0.1"
+proc-macro-error  = "1"
+proc-macro2       = "1"
+quote             = "1"
+syn               = "2"

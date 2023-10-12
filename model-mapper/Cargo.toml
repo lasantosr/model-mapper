@@ -1,0 +1,25 @@
+[package]
+name = "model-mapper"
+description = "Derive macro to map between different types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+
+# Includes mappers for chrono types
+chrono = ["dep:chrono"]
+
+[dependencies]
+model-mapper-macros = { workspace = true }
+
+anyhow = { workspace = true }
+
+chrono = { workspace = true, optional = true }

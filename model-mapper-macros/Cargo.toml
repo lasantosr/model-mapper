@@ -1,0 +1,22 @@
+[package]
+name = "model-mapper-macros"
+description = "Macros for model-mapper crate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+darling           = { workspace = true }
+macro-field-utils = { workspace = true }
+proc-macro-error  = { workspace = true }
+proc-macro2       = { workspace = true }
+quote             = { workspace = true }
+syn               = { workspace = true, features = ["extra-traits"] }

@@ -1,0 +1,15 @@
+# https://taplo.tamasfe.dev/configuration/formatter-options.html
+
+[formatting]
+align_entries = false
+trailing_newline = true
+align_comments = false
+column_width = 120
+
+[[rule]]
+#include = ["Cargo.toml", "**/Cargo.toml"]
+keys = ["dependencies", "dev-dependencies", "workspace.dependencies"]
+
+[rule.formatting]
+reorder_keys = true
+align_entries = true
