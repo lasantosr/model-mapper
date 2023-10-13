@@ -10,11 +10,11 @@ use proc_macro_error::proc_macro_error;
 ///
 /// Attributes can be set directly if only one type is involved in the conversion:
 /// ``` ignore
-/// #[mapper(from, into, ty = OtherType, ignore = field_1, ignore = field_2)]
+/// #[mapper(from, into, ty = OtherType, ignore(field = field_1), ignore(field = field_2))]
 /// ```
 /// Or they can be wrapped in a `derive` attribute to allow for multiple types:
 /// ``` ignore
-/// #[mapper(derive(try_from, ty = OtherType, ignore = field_1))]
+/// #[mapper(derive(try_from, ty = OtherType, ignore(field = field_1)))]
 /// #[mapper(derive(into, ty = YetAnotherType))]
 /// ```
 ///
@@ -29,20 +29,29 @@ use proc_macro_error::proc_macro_error;
 ///
 /// #### Type level attributes
 /// - `ty = String` _(**mandatory**)_: The other type to derive the conversion
-/// - `ignore = field_1` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for
-///   enums) the other type has and this one doesn't \*
+/// - `ignore` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
+///   other type has and this one doesn't \*
+///   - `field = String` _(mandatory)_: The field or variant to ignore
+///   - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
 /// - `from` _(optional)_: Wether to derive [From] the other type for self
 /// - `into` _(optional)_: Wether to derive [From] self for the other type
 /// - `try_from` _(optional)_: Wether to derive [TryFrom] the other type for self
 /// - `try_into` _(optional)_: Wether to derive [TryFrom] self for the other type
 ///
 /// #### Variant level attributes
-/// - `ignore = field_1` _(optional, multiple)_: Additional variants that the other enum has and this one doesn't \*
+/// - `ignore` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
+///   doesn't \*
+///   - `field = String` _(mandatory)_: The field or variant to ignore
+///   - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
 /// - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it \*
+/// - `default = Expr` _(optional)_: If skipped, the default value to populate this variant  (defaults to
+///   `Default::default()`)
 /// - `rename = "OtherVariant"` _(optional)_: To rename this variant on the other enum
 ///
 /// #### Field level attributes
 /// - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it \*
+/// - `default = Expr` _(optional)_: If skipped, the default value to populate this field  (defaults to
+///   `Default::default()`)
 /// - `rename = "other_field"` _(optional)_: To rename this field on the other type
 /// - `with = mod::my_function` _(optional)_: If the field type doesn't implement [Into] the other, this property allows
 ///   you to customize the behavior by providing a conversion function
@@ -50,12 +59,12 @@ use proc_macro_error::proc_macro_error;
 ///   allows you to customize the behavior by providing a conversion function
 ///
 /// **\*** When ignoring or skipping fields or variants it might be required that the enum or the field type implements
-/// [Default] in order to properly populate it.
+/// [Default] in order to properly populate it if no default is provided.
 ///
 /// ## Examples
 ///
 /// ```
-/// # use rust_graphql_starter_macros::Mapper;
+/// # use model_mapper_macros::Mapper;
 /// # #[derive(Default)]
 /// # pub enum ResponseModel {
 /// #     #[default]
@@ -73,14 +82,13 @@ use proc_macro_error::proc_macro_error;
 /// #     pub fn option<F,I>(opt: Option<F>) -> Option<I> { unreachable!() }
 /// #     pub fn try_option<F,I>(opt: Option<F>) -> Result<Option<I>, std::io::Error> { unreachable!() }
 /// # }
-/// #[derive(Default, Mapper)]
-/// #[mapper(try_from, into, ty = ResponseModel, ignore = Unknown)]
+/// #[derive(Mapper)]
+/// #[mapper(try_from, into, ty = ResponseModel, ignore(field = Unknown, default = CustomResponse::Empty))]
 /// pub enum CustomResponse {
-///     #[default]
 ///     Empty,
 ///     #[mapper(rename = Text)]
 ///     Message(String),
-///     #[mapper(ignore = internal)]
+///     #[mapper(ignore(field = internal))]
 ///     Data {
 ///         id: i64,
 ///         #[mapper(rename = "text")]

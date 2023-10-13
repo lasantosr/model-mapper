@@ -23,7 +23,7 @@ pub(super) struct MapperOpts {
     path: Option<SpannedValue<syn::Path>>,
     /// Wether to ignore some variants/fields of the type
     #[darling(default, multiple)]
-    ignore: Vec<SpannedValue<syn::Ident>>,
+    ignore: Vec<IgnoreInput>,
     /// Whether to derive [From] the type to self
     #[darling(default)]
     from: SpannedValue<Flag>,
@@ -45,7 +45,7 @@ pub(super) struct ItemInput {
     pub(super) path: SpannedValue<syn::Path>,
     /// Wether to ignore some variants/fields of the type
     #[darling(default, multiple)]
-    pub(super) ignore: Vec<SpannedValue<syn::Ident>>,
+    pub(super) ignore: Vec<IgnoreInput>,
     /// Whether to derive [From] the type to self
     #[darling(default)]
     pub(super) from: SpannedValue<Flag>,
@@ -78,10 +78,13 @@ pub(super) struct VariantReceiver {
     path: Option<SpannedValue<syn::Path>>,
     /// Wether to ignore some fields of the variant
     #[darling(default, multiple)]
-    ignore: Vec<SpannedValue<syn::Ident>>,
-    /// To skip this field when deriving (defaults to `false`)
+    ignore: Vec<IgnoreInput>,
+    /// To skip this variant when deriving (defaults to `false`)
     #[darling(default)]
     skip: SpannedValue<Flag>,
+    /// To populate this variant when skipped (defaults to `Default::default()`)
+    #[darling(default)]
+    default: Option<SpannedValue<syn::Expr>>,
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -95,10 +98,13 @@ struct ItemVariantInput {
     path: SpannedValue<syn::Path>,
     /// Wether to ignore some fields of the variant
     #[darling(default, multiple)]
-    ignore: Vec<SpannedValue<syn::Ident>>,
-    /// To skip this field when deriving (defaults to `false`)
+    ignore: Vec<IgnoreInput>,
+    /// To skip this variant when deriving (defaults to `false`)
     #[darling(default)]
     skip: SpannedValue<Flag>,
+    /// To populate this variant when skipped (defaults to `Default::default()`)
+    #[darling(default)]
+    default: Option<SpannedValue<syn::Expr>>,
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -123,6 +129,9 @@ pub(super) struct FieldReceiver {
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: SpannedValue<Flag>,
+    /// To populate this field when skipped (defaults to `Default::default()`)
+    #[darling(default)]
+    default: Option<SpannedValue<syn::Expr>>,
     /// To use some function to map the values
     #[darling(default)]
     with: Option<SpannedValue<syn::Path>>,
@@ -143,6 +152,9 @@ struct ItemFieldInput {
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: SpannedValue<Flag>,
+    /// To populate this field when skipped (defaults to `Default::default()`)
+    #[darling(default)]
+    default: Option<SpannedValue<syn::Expr>>,
     /// To use some function to map the values
     #[darling(default)]
     with: Option<SpannedValue<syn::Path>>,
@@ -154,6 +166,15 @@ struct ItemFieldInput {
     rename: Option<SpannedValue<syn::Ident>>,
 }
 
+#[derive(FromMeta, Clone)]
+pub(super) struct IgnoreInput {
+    /// Name of the ignored field or variant
+    pub(super) field: SpannedValue<syn::Ident>,
+    /// Default value for the field
+    #[darling(default)]
+    pub(super) default: Option<syn::Expr>,
+}
+
 impl MapperOpts {
     pub(super) fn items(&self) -> Vec<ItemInput> {
         if !self.items.is_empty() {
@@ -162,7 +183,7 @@ impl MapperOpts {
             }
             if !self.ignore.is_empty() {
                 for i in &self.ignore {
-                    emit_error!(i.span(), "Illegal attribute when 'derive' is set")
+                    emit_error!(i.field.span(), "Illegal attribute when 'derive' is set")
                 }
             }
             if self.from.is_present() {
@@ -216,11 +237,14 @@ impl VariantReceiver {
             }
             if !self.ignore.is_empty() {
                 for i in &self.ignore {
-                    emit_error!(i.span(), "Illegal attribute if 'when' is set")
+                    emit_error!(i.field.span(), "Illegal attribute if 'when' is set")
                 }
             }
             if self.skip.is_present() {
                 emit_error!(self.skip.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(default) = self.default.as_ref() {
+                emit_error!(default.span(), "Illegal attribute if 'when' is set")
             }
             if let Some(rename) = self.rename.as_ref() {
                 emit_error!(rename.span(), "Illegal attribute if 'when' is set")
@@ -232,16 +256,26 @@ impl VariantReceiver {
                 emit_error!(path.span(), "There is no derive defined for this type");
             }
         }
+        if !self.skip.is_present() {
+            if let Some(default) = &self.default {
+                emit_error!(default.span(), "Illegal attribute if no 'skip' is set")
+            }
+        }
         for item in self.items.iter() {
             if !derives.iter().any(|d| d.path.as_ref() == item.path.as_ref()) {
                 emit_error!(item.path.span(), "There is no derive defined for this type");
+            }
+            if !item.skip.is_present() {
+                if let Some(default) = &item.default {
+                    emit_error!(default.span(), "Illegal attribute if no 'skip' is set")
+                }
             }
         }
 
         self.fields.iter().for_each(|f| f.validate(derives));
     }
 
-    pub(super) fn ignore_for(&self, derive_path: &syn::Path) -> Option<&Vec<SpannedValue<syn::Ident>>> {
+    pub(super) fn ignore_for(&self, derive_path: &syn::Path) -> Option<&Vec<IgnoreInput>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 if item.ignore.is_empty() {
@@ -268,20 +302,30 @@ impl VariantReceiver {
         }
     }
 
-    pub(super) fn is_skip_for(&self, derive_path: &syn::Path) -> bool {
+    pub(super) fn skip_for(&self, derive_path: &syn::Path) -> Option<Option<&syn::Expr>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
-                return item.skip.is_present();
+                return if item.skip.is_present() {
+                    Some(item.default.as_deref())
+                } else {
+                    None
+                };
             }
         }
         if let Some(path) = &self.path {
             if path.as_ref() == derive_path {
-                self.skip.is_present()
+                if self.skip.is_present() {
+                    Some(self.default.as_deref())
+                } else {
+                    None
+                }
             } else {
-                false
+                None
             }
+        } else if self.skip.is_present() {
+            Some(self.default.as_deref())
         } else {
-            self.skip.is_present()
+            None
         }
     }
 
@@ -312,6 +356,9 @@ impl FieldReceiver {
             if self.skip.is_present() {
                 emit_error!(self.skip.span(), "Illegal attribute if 'when' is set")
             }
+            if let Some(default) = self.default.as_ref() {
+                emit_error!(default.span(), "Illegal attribute if 'when' is set")
+            }
             if let Some(with) = self.with.as_ref() {
                 emit_error!(with.span(), "Illegal attribute if 'when' is set")
             }
@@ -328,27 +375,47 @@ impl FieldReceiver {
                 emit_error!(path.span(), "There is no derive defined for this type");
             }
         }
+        if !self.skip.is_present() {
+            if let Some(default) = &self.default {
+                emit_error!(default.span(), "Illegal attribute if no 'skip' is set")
+            }
+        }
         for item in self.items.iter() {
             if !derives.iter().any(|d| d.path.as_ref() == item.path.as_ref()) {
                 emit_error!(item.path.span(), "There is no derive defined for this type");
             }
+            if !item.skip.is_present() {
+                if let Some(default) = &item.default {
+                    emit_error!(default.span(), "Illegal attribute if no 'skip' is set")
+                }
+            }
         }
     }
 
-    pub(super) fn is_skip_for(&self, derive_path: &syn::Path) -> bool {
+    pub(super) fn skip_for(&self, derive_path: &syn::Path) -> Option<Option<&syn::Expr>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
-                return item.skip.is_present();
+                return if item.skip.is_present() {
+                    Some(item.default.as_deref())
+                } else {
+                    None
+                };
             }
         }
         if let Some(path) = &self.path {
             if path.as_ref() == derive_path {
-                self.skip.is_present()
+                if self.skip.is_present() {
+                    Some(self.default.as_deref())
+                } else {
+                    None
+                }
             } else {
-                false
+                None
             }
+        } else if self.skip.is_present() {
+            Some(self.default.as_deref())
         } else {
-            self.skip.is_present()
+            None
         }
     }
 

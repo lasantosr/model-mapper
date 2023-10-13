@@ -6,7 +6,7 @@ use macro_field_utils::{FieldInfo, FieldsCollector, FieldsHelper, VariantsHelper
 use proc_macro2::TokenStream;
 use proc_macro_error::abort_if_dirty;
 use quote::{quote, ToTokens};
-use syn::DeriveInput;
+use syn::{parse_quote, DeriveInput};
 
 use crate::input::*;
 
@@ -129,15 +129,19 @@ fn derive_struct_from(
     let from_ty = derive.path.as_ref();
     let into_ty = ident;
     let from_ty_fields_helper = FieldsHelper::new(struct_fields)
-        .filtering(|_ix, f| !f.is_skip_for(from_ty))
-        .ignore_extra(derive.ignore.iter().map(|f| f.as_ref()));
+        .filtering(|_ix, f| f.skip_for(from_ty).is_none())
+        .ignore_extra(derive.ignore.iter().map(|f| f.field.as_ref()));
     let into_ty_fields_helper = FieldsHelper::new(struct_fields)
-        .filtering(|_ix, f| !f.is_skip_for(from_ty))
-        .include_default(
+        .filtering(|_ix, f| f.skip_for(from_ty).is_none())
+        .include_default_with(
             struct_fields
                 .iter()
-                .filter(|f| f.is_skip_for(from_ty))
-                .filter_map(|f| f.ident.as_ref()),
+                .filter_map(|f| f.skip_for(from_ty).map(|skip| (f, skip)))
+                .filter_map(|(f, skip)| {
+                    f.ident
+                        .as_ref()
+                        .map(|field| (field, skip.cloned().unwrap_or(parse_quote!(Default::default()))))
+                }),
         );
 
     // Deconstruct the `from` input
@@ -211,16 +215,21 @@ fn derive_struct_into(
     let from_ty = ident;
     let into_ty = derive.path.as_ref();
     let from_ty_fields_helper = FieldsHelper::new(struct_fields)
-        .filtering(|_ix, f| !f.is_skip_for(into_ty))
+        .filtering(|_ix, f| f.skip_for(into_ty).is_none())
         .ignore_extra(
             struct_fields
                 .iter()
-                .filter(|f| f.is_skip_for(into_ty))
+                .filter(|f| f.skip_for(into_ty).is_some())
                 .filter_map(|f| f.ident.as_ref()),
         );
     let into_ty_fields_helper = FieldsHelper::new(struct_fields)
-        .filtering(|_ix, f| !f.is_skip_for(into_ty))
-        .include_default(derive.ignore.iter().map(|f| f.as_ref()));
+        .filtering(|_ix, f| f.skip_for(into_ty).is_none())
+        .include_default_with(derive.ignore.iter().map(|i| {
+            (
+                i.field.as_ref(),
+                i.default.clone().unwrap_or(parse_quote!(Default::default())),
+            )
+        }));
 
     // Deconstruct the `from` input
     let deconstructed_from = from_ty_fields_helper.right_collector(FieldsCollector::ident).collect();
@@ -292,7 +301,7 @@ fn derive_enum_from(
     let into_ty = ident;
 
     let match_body = VariantsHelper::new(enum_variants)
-        .filtering_variants(|v| !v.is_skip_for(from_ty))
+        .filtering_variants(|v| v.skip_for(from_ty).is_none())
         .left_collector(|v, fields| {
             let ident = if let Some(rename) = v.rename_for(from_ty) {
                 rename
@@ -301,10 +310,10 @@ fn derive_enum_from(
             };
             let ignore_extra = v
                 .ignore_for(from_ty)
-                .map(|i| i.iter().map(|i| i.as_ref()).collect::<Vec<_>>())
+                .map(|i| i.iter().map(|i| i.field.as_ref()).collect::<Vec<_>>())
                 .unwrap_or_default();
             let left = fields
-                .filtering(|_ix, f| !f.is_skip_for(from_ty))
+                .filtering(|_ix, f| f.skip_for(from_ty).is_none())
                 .ignore_extra(ignore_extra)
                 .left_collector(|ix, f| {
                     let ident = if let Some(rename) = f.rename_for(from_ty) {
@@ -321,12 +330,16 @@ fn derive_enum_from(
         .right_collector(|v, fields| {
             let ident = &v.ident;
             let right = fields
-                .filtering(|_ix, f| !f.is_skip_for(from_ty))
-                .include_default(
+                .filtering(|_ix, f| f.skip_for(from_ty).is_none())
+                .include_default_with(
                     v.fields
                         .iter()
-                        .filter(|f| f.is_skip_for(from_ty))
-                        .filter_map(|f| f.ident.as_ref()),
+                        .filter_map(|f| f.skip_for(from_ty).map(|skip| (f, skip)))
+                        .filter_map(|(f, skip)| {
+                            f.ident
+                                .as_ref()
+                                .map(|field| (field, skip.cloned().unwrap_or(parse_quote!(Default::default()))))
+                        }),
                 )
                 .right_collector(|ix, f| {
                     let ident = f.as_ident(ix);
@@ -346,8 +359,11 @@ fn derive_enum_from(
             quote!( #into_ty::#ident #right )
         })
         .include_extra_variants(derive.ignore.iter().map(|i| {
-            let field = i.as_ref();
-            (quote!(#from_ty::#field { .. }), Some(quote!(Default::default())))
+            let field = i.field.as_ref();
+            (
+                quote!(#from_ty::#field { .. }),
+                Some(i.default.clone().unwrap_or(parse_quote!(Default::default()))),
+            )
         }))
         .collect();
 
@@ -392,15 +408,15 @@ fn derive_enum_into(
     let into_ty = derive.path.as_ref();
 
     let match_body = VariantsHelper::new(enum_variants)
-        .filtering_variants(|v| !v.is_skip_for(into_ty))
+        .filtering_variants(|v| v.skip_for(into_ty).is_none())
         .left_collector(|v, fields| {
             let ident = &v.ident;
             let left = fields
-                .filtering(|_ix, f| !f.is_skip_for(into_ty))
+                .filtering(|_ix, f| f.skip_for(into_ty).is_none())
                 .ignore_extra(
                     v.fields
                         .iter()
-                        .filter(|f| f.is_skip_for(into_ty))
+                        .filter(|f| f.skip_for(into_ty).is_some())
                         .filter_map(|f| f.ident.as_ref()),
                 )
                 .right_collector(FieldsCollector::ident)
@@ -414,10 +430,19 @@ fn derive_enum_into(
                 &v.ident
             };
             let right = fields
-                .filtering(|_ix, f| !f.is_skip_for(into_ty))
-                .include_default(
+                .filtering(|_ix, f| f.skip_for(into_ty).is_none())
+                .include_default_with(
                     v.ignore_for(into_ty)
-                        .map(|i| i.iter().map(|f| f.as_ref()).collect::<Vec<_>>())
+                        .map(|i| {
+                            i.iter()
+                                .map(|i| {
+                                    (
+                                        i.field.as_ref(),
+                                        i.default.clone().unwrap_or(parse_quote!(Default::default())),
+                                    )
+                                })
+                                .collect::<Vec<_>>()
+                        })
                         .unwrap_or_default(),
                 )
                 .left_collector(|ix, f| {
@@ -445,10 +470,18 @@ fn derive_enum_into(
                 .collect();
             quote!( #into_ty::#ident #right )
         })
-        .include_extra_variants(enum_variants.iter().filter(|v| v.is_skip_for(into_ty)).map(|v| {
-            let variant = &v.ident;
-            (quote!(#from_ty::#variant { .. }), Some(quote!(Default::default())))
-        }))
+        .include_extra_variants(
+            enum_variants
+                .iter()
+                .filter_map(|v| v.skip_for(into_ty).map(|skip| (v, skip)))
+                .map(|(v, skip)| {
+                    let variant = &v.ident;
+                    (
+                        quote!(#from_ty::#variant { .. }),
+                        Some(skip.cloned().unwrap_or(parse_quote!(Default::default()))),
+                    )
+                }),
+        )
         .collect();
 
     // Derive

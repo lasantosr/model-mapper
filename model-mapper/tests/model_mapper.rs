@@ -60,7 +60,7 @@ pub struct ModelTryInto {
 }
 
 #[derive(Clone, Default, Mapper)]
-#[mapper(from, into, ty = Entity, ignore = name, ignore = age)]
+#[mapper(from, into, ty = Entity, ignore(field = name), ignore(field = age))]
 pub struct ModelFull {
     id: i64,
     fav_number: Option<i32>,
@@ -79,8 +79,8 @@ pub struct OtherEntity {
 }
 
 #[derive(Clone, Default, Mapper)]
-#[mapper(derive(try_from, ty = Entity, ignore = fav_number, ignore = sizes))]
-#[mapper(derive(into, ty = OtherEntity, ignore = email))]
+#[mapper(derive(try_from, ty = Entity, ignore(field = fav_number), ignore(field = sizes)))]
+#[mapper(derive(into, ty = OtherEntity, ignore(field = email)))]
 pub struct ModelMultiple {
     id: i64,
     #[mapper(when(ty = OtherEntity, rename = "first_name"))]
@@ -101,9 +101,7 @@ pub struct EntityTuple(i32, String);
 #[mapper(from, try_into, ty = EntityTuple)]
 pub struct ModelTuple(i64, String);
 
-#[derive(Clone, Default)]
 pub enum EntityEnum {
-    #[default]
     Empty,
     Entity(Entity),
     InPlace {
@@ -115,13 +113,12 @@ pub enum EntityEnum {
     Unknown,
 }
 
-#[derive(Clone, Default, Mapper)]
-#[mapper(try_from, into, ty = EntityEnum, ignore = Unknown)]
+#[derive(Mapper)]
+#[mapper(try_from, into, ty = EntityEnum, ignore(field = Unknown, default = ModelEnum::Empty))]
 pub enum ModelEnum {
-    #[default]
     Empty,
     Entity(Entity),
-    #[mapper(rename = InPlace, ignore = sizes)]
+    #[mapper(rename = InPlace, ignore(field = sizes, default = Some(vec![5])))]
     New {
         id: i64,
         #[mapper(rename = "name")]
@@ -129,10 +126,10 @@ pub enum ModelEnum {
         #[mapper(with = with::option)]
         #[mapper(try_with = with::try_option)]
         age: Option<i16>,
-        #[mapper(skip)]
+        #[mapper(skip, default = true)]
         random: bool,
     },
-    #[mapper(skip)]
+    #[mapper(skip, default = EntityEnum::Unknown)]
     Error,
 }
 
@@ -146,6 +143,6 @@ fn test_implemented_traits() {
     let _into_full: Entity = ModelFull::default().into();
     let _try_from_multiple: Result<ModelMultiple, _> = ModelMultiple::try_from(Entity::default());
     let _into_multiple: OtherEntity = ModelMultiple::default().into();
-    let _try_from_enum: Result<ModelEnum, _> = ModelEnum::try_from(EntityEnum::default());
-    let _try_into_enum: Result<EntityEnum, _> = ModelEnum::default().try_into();
+    let _try_from_enum: Result<ModelEnum, _> = ModelEnum::try_from(EntityEnum::Empty);
+    let _try_into_enum: Result<EntityEnum, _> = ModelEnum::Empty.try_into();
 }
