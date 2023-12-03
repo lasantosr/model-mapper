@@ -130,6 +130,7 @@ fn derive_struct_from(
     let into_ty = ident;
     let from_ty_fields_helper = FieldsHelper::new(struct_fields)
         .filtering(|_ix, f| f.skip_for(from_ty).is_none())
+        .ignore_all_extra(derive.ignore_extra.is_present())
         .ignore_extra(derive.ignore.iter().map(|f| f.field.as_ref()));
     let into_ty_fields_helper = FieldsHelper::new(struct_fields)
         .filtering(|_ix, f| f.skip_for(from_ty).is_none())
@@ -224,6 +225,7 @@ fn derive_struct_into(
         );
     let into_ty_fields_helper = FieldsHelper::new(struct_fields)
         .filtering(|_ix, f| f.skip_for(into_ty).is_none())
+        .include_all_default(derive.ignore_extra.is_present())
         .include_default_with(derive.ignore.iter().map(|i| {
             (
                 i.field.as_ref(),
@@ -300,7 +302,7 @@ fn derive_enum_from(
     let from_ty = derive.path.as_ref();
     let into_ty = ident;
 
-    let match_body = VariantsHelper::new(enum_variants)
+    let mut match_body = VariantsHelper::new(enum_variants)
         .filtering_variants(|v| v.skip_for(from_ty).is_none())
         .left_collector(|v, fields| {
             let ident = if let Some(rename) = v.rename_for(from_ty) {
@@ -308,12 +310,14 @@ fn derive_enum_from(
             } else {
                 &v.ident
             };
+            let ignore_all_extra = v.ignore_extra_for(from_ty);
             let ignore_extra = v
                 .ignore_for(from_ty)
                 .map(|i| i.iter().map(|i| i.field.as_ref()).collect::<Vec<_>>())
                 .unwrap_or_default();
             let left = fields
                 .filtering(|_ix, f| f.skip_for(from_ty).is_none())
+                .ignore_all_extra(ignore_all_extra)
                 .ignore_extra(ignore_extra)
                 .left_collector(|ix, f| {
                     let ident = if let Some(rename) = f.rename_for(from_ty) {
@@ -364,8 +368,11 @@ fn derive_enum_from(
                 quote!(#from_ty::#field { .. }),
                 Some(i.default.clone().unwrap_or(parse_quote!(Default::default()))),
             )
-        }))
-        .collect();
+        }));
+    if derive.ignore_extra.is_present() {
+        match_body = match_body.ignore_all_extra_variants(quote!(Default::default()));
+    }
+    let match_body = match_body.collect();
 
     // Derive
     if is_try {

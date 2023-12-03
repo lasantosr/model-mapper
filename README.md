@@ -23,6 +23,8 @@ The following attributes are available.
 - Type level attributes:
 
   - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
+  - `ignore_extra` _(optional)_: Wether to ignore all extra fields (for structs) or variants (for enums) of the other
+    type \*
   - `ignore` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
     other type has and this one doesn't \*
     - `field = String` _(mandatory)_: The field or variant to ignore
@@ -34,6 +36,8 @@ The following attributes are available.
 
 - Variant level attributes:
 
+  - `ignore_extra` _(optional)_: Wether to ignore all extra fields of the other variant (only valid for _from_ and
+    _try_from_) \*
   - `ignore` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
     doesn't \*
     - `field = String` _(mandatory)_: The field or variant to ignore

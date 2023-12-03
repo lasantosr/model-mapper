@@ -133,6 +133,27 @@ pub enum ModelEnum {
     Error,
 }
 
+#[derive(Default)]
+pub enum EntityExtra {
+    #[default]
+    One,
+    Two {
+        id: i64,
+        name: String,
+        surname: Option<String>,
+    },
+}
+
+#[derive(Default, Mapper)]
+#[mapper(from, ty = EntityExtra, ignore_extra)]
+pub enum ModelExtra {
+    #[mapper(skip)]
+    #[default]
+    Default,
+    #[mapper(ignore_extra)]
+    Two { id: i64 },
+}
+
 // It doesn't need the `#[test]` macro because it passes if it compiles.
 fn test_implemented_traits() {
     let _from: ModelFrom = ModelFrom::from(Entity::default());

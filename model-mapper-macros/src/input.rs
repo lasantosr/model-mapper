@@ -21,7 +21,10 @@ pub(super) struct MapperOpts {
     /// Path of the struct or enum
     #[darling(default, rename = "ty")]
     path: Option<SpannedValue<syn::Path>>,
-    /// Wether to ignore some variants/fields of the type
+    /// Wether to ignore all extra fields/variants of the other type
+    #[darling(default)]
+    ignore_extra: SpannedValue<Flag>,
+    /// Wether to ignore some variants/fields of the other type
     #[darling(default, multiple)]
     ignore: Vec<IgnoreInput>,
     /// Whether to derive [From] the type to self
@@ -43,7 +46,10 @@ pub(super) struct ItemInput {
     /// Path of the struct or enum
     #[darling(rename = "ty")]
     pub(super) path: SpannedValue<syn::Path>,
-    /// Wether to ignore some variants/fields of the type
+    /// Wether to ignore all extra fields/variants of the other type
+    #[darling(default)]
+    pub(super) ignore_extra: SpannedValue<Flag>,
+    /// Wether to ignore some variants/fields of the other type
     #[darling(default, multiple)]
     pub(super) ignore: Vec<IgnoreInput>,
     /// Whether to derive [From] the type to self
@@ -76,6 +82,9 @@ pub(super) struct VariantReceiver {
     /// Path of the struct or enum to derive
     #[darling(default, rename = "ty")]
     path: Option<SpannedValue<syn::Path>>,
+    /// Wether to ignore all extra fields of the other variant
+    #[darling(default)]
+    ignore_extra: SpannedValue<Flag>,
     /// Wether to ignore some fields of the variant
     #[darling(default, multiple)]
     ignore: Vec<IgnoreInput>,
@@ -96,6 +105,9 @@ struct ItemVariantInput {
     /// Path of the struct or enum to derive
     #[darling(rename = "ty")]
     path: SpannedValue<syn::Path>,
+    /// Wether to ignore all extra fields of the other variant
+    #[darling(default)]
+    ignore_extra: SpannedValue<Flag>,
     /// Wether to ignore some fields of the variant
     #[darling(default, multiple)]
     ignore: Vec<IgnoreInput>,
@@ -181,6 +193,9 @@ impl MapperOpts {
             if let Some(path) = self.path.as_ref() {
                 emit_error!(path.span(), "Illegal attribute when 'derive' is set")
             }
+            if self.ignore_extra.is_present() {
+                emit_error!(self.ignore_extra.span(), "Illegal attribute when 'derive' is set")
+            }
             if !self.ignore.is_empty() {
                 for i in &self.ignore {
                     emit_error!(i.field.span(), "Illegal attribute when 'derive' is set")
@@ -202,6 +217,7 @@ impl MapperOpts {
         } else if let Some(path) = self.path.as_ref() {
             vec![ItemInput {
                 path: path.clone(),
+                ignore_extra: self.ignore_extra,
                 ignore: self.ignore.clone(),
                 from: self.from,
                 into: self.into,
@@ -234,6 +250,9 @@ impl VariantReceiver {
         if !self.items.is_empty() {
             if let Some(path) = self.path.as_ref() {
                 emit_error!(path.span(), "Illegal attribute if 'when' is set")
+            }
+            if self.ignore_extra.is_present() {
+                emit_error!(self.ignore_extra.span(), "Illegal attribute if 'when' is set")
             }
             if !self.ignore.is_empty() {
                 for i in &self.ignore {
@@ -273,6 +292,23 @@ impl VariantReceiver {
         }
 
         self.fields.iter().for_each(|f| f.validate(derives));
+    }
+
+    pub(super) fn ignore_extra_for(&self, derive_path: &syn::Path) -> bool {
+        for item in &self.items {
+            if item.path.as_ref() == derive_path {
+                return item.ignore_extra.is_present();
+            }
+        }
+        if let Some(path) = &self.path {
+            if path.as_ref() == derive_path {
+                self.ignore_extra.is_present()
+            } else {
+                false
+            }
+        } else {
+            self.ignore_extra.is_present()
+        }
     }
 
     pub(super) fn ignore_for(&self, derive_path: &syn::Path) -> Option<&Vec<IgnoreInput>> {
