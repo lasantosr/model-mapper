@@ -12,6 +12,14 @@ pub use hashmap::*;
 pub use option::*;
 pub use vec::*;
 
+/// Mapper for types implementing [ExtraInto]
+pub fn extra<F, I>(from: F) -> I
+where
+    F: ExtraInto<I>,
+{
+    ExtraInto::into_extra(from)
+}
+
 /// Owned trait to implement [Into] on foreign types
 pub trait ExtraInto<I> {
     fn into_extra(self) -> I;
