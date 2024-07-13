@@ -53,8 +53,12 @@ The following attributes are available.
   - `rename = "other_field"` _(optional)_: To rename this field on the other type
   - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` the other, this property allows
     you to customize the behavior by providing a conversion function
+  - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` derive
+  - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` derive
   - `try_with = mod::my_function` _(optional)_: If the field type doesn't implement `TryInto` the other, this property
     allows you to customize the behavior by providing a conversion function
+  - `into_try_with = mod::my_function` _(optional)_: The same as above but only for the `try_into` derive
+  - `from_try_with = mod::my_function` _(optional)_: The same as above but only for the `try_from` derive
 
 **\*** When ignoring or skipping fields or variants it might be required that the enum or the field type implements
 `Default` in order to properly populate it if no default value is provided.
