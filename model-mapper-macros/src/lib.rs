@@ -21,7 +21,7 @@ use proc_macro_error::proc_macro_error;
 /// If multiple types are involved, both variant and field level attributes can also be wrapped in a `when` attribute
 /// and must set the `ty` they refer to:
 /// ``` ignore
-/// #[mapper(when(ty = OtherType, try_with = with::try_remove_option))]
+/// #[mapper(when(ty = OtherType, try_with = TryIntoMapper::try_map_removing_option))]
 /// #[mapper(when(ty = YetAnotherType, skip))]
 /// ```
 ///
@@ -82,9 +82,13 @@ use proc_macro_error::proc_macro_error;
 /// #     },
 /// #     Unknown,
 /// # }
-/// # mod with {
-/// #     pub fn option<F,I>(opt: Option<F>) -> Option<I> { unreachable!() }
-/// #     pub fn try_option<F,I>(opt: Option<F>) -> Result<Option<I>, std::io::Error> { unreachable!() }
+/// # pub struct IntoMapper;
+/// # impl IntoMapper {
+/// #     pub fn map_wrapped<F,I>(opt: Option<F>) -> Option<I> { unreachable!() }
+/// # }
+/// # pub struct TryIntoMapper;
+/// # impl TryIntoMapper {
+/// #     pub fn try_map_wrapped<F,I>(opt: Option<F>) -> Result<Option<I>, std::io::Error> { unreachable!() }
 /// # }
 /// #[derive(Mapper)]
 /// #[mapper(try_from, into, ty = ResponseModel, ignore(field = Unknown, default = CustomResponse::Empty))]
@@ -97,8 +101,8 @@ use proc_macro_error::proc_macro_error;
 ///         id: i64,
 ///         #[mapper(rename = "text")]
 ///         message: String,
-///         #[mapper(with = with::option)]
-///         #[mapper(try_with = with::try_option)]
+///         #[mapper(with = IntoMapper::map_wrapped)]
+///         #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
 ///         status: Option<i16>,
 ///         #[mapper(skip)]
 ///         random: bool,

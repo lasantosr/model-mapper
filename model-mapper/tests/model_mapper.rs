@@ -1,6 +1,11 @@
 #![allow(dead_code)]
 
-use model_mapper::{with, Mapper};
+use std::str::FromStr;
+
+use model_mapper::{
+    with::{IntoMapper, TryIntoMapper, TypeFallibleMapper, TypeMapper},
+    Mapper,
+};
 
 #[derive(Clone, Default)]
 pub struct Entity {
@@ -17,9 +22,9 @@ pub struct ModelFrom {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(with = with::option)]
+    #[mapper(with = IntoMapper::map_wrapped)]
     age: Option<i64>,
-    #[mapper(with = with::option_extra)]
+    #[mapper(with = IntoMapper::map_nested_wrapped)]
     sizes: Option<Vec<i64>>,
 }
 
@@ -29,9 +34,9 @@ pub struct ModelInto {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(with = with::option)]
+    #[mapper(with = IntoMapper::map_wrapped)]
     age: Option<i16>,
-    #[mapper(with = with::option_extra)]
+    #[mapper(with = IntoMapper::map_nested_wrapped)]
     sizes: Option<Vec<i16>>,
 }
 
@@ -41,9 +46,9 @@ pub struct ModelTryFrom {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(try_with = with::try_option)]
+    #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
     age: Option<i16>,
-    #[mapper(try_with = with::try_option_extra)]
+    #[mapper(try_with = TryIntoMapper::try_map_nested_wrapped)]
     sizes: Option<Vec<i16>>,
 }
 
@@ -53,9 +58,9 @@ pub struct ModelTryInto {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(try_with = with::try_option)]
+    #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
     age: Option<i64>,
-    #[mapper(try_with = with::try_option_extra)]
+    #[mapper(try_with = TryIntoMapper::try_map_nested_wrapped)]
     sizes: Option<Vec<i64>>,
 }
 
@@ -85,21 +90,40 @@ pub struct ModelMultiple {
     id: i64,
     #[mapper(when(ty = OtherEntity, rename = "first_name"))]
     name: String,
-    #[mapper(when(ty = Entity, try_with = with::try_remove_option))]
+    #[mapper(when(ty = Entity, try_with = TryIntoMapper::try_map_removing_option))]
     #[mapper(when(ty = OtherEntity, skip))]
     age: i32,
     #[mapper(when(ty = Entity, skip))]
-    #[mapper(when(ty = OtherEntity, rename = "last_name", with = with::add_option))]
+    #[mapper(when(ty = OtherEntity, rename = "last_name", with = IntoMapper::map_into_option))]
     surname: String,
     #[mapper(skip)]
     other: String,
 }
 
-pub struct EntityTuple(i32, String);
+pub struct EntityTuple(i32, i32);
 
 #[derive(Mapper)]
-#[mapper(from, try_into, ty = EntityTuple)]
-pub struct ModelTuple(i64, String);
+#[mapper(from, into, ty = EntityTuple)]
+pub struct ModelTuple(
+    i32,
+    #[mapper(into_with = FromStringMapper::map, from_with = ToStringMapper::map)] String,
+);
+
+struct ToStringMapper;
+impl<T: ToString> TypeMapper<T, String> for ToStringMapper {
+    fn map(from: T) -> String {
+        from.to_string()
+    }
+}
+struct FromStringMapper;
+impl<T: FromStr> TypeMapper<String, T> for FromStringMapper
+where
+    <T as FromStr>::Err: std::fmt::Debug,
+{
+    fn map(from: String) -> T {
+        from.parse().unwrap()
+    }
+}
 
 pub enum EntityEnum {
     Empty,
@@ -123,8 +147,8 @@ pub enum ModelEnum {
         id: i64,
         #[mapper(rename = "name")]
         first_name: String,
-        #[mapper(with = with::option)]
-        #[mapper(try_with = with::try_option)]
+        #[mapper(with = IntoMapper::map_wrapped)]
+        #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
         age: Option<i16>,
         #[mapper(skip, default = true)]
         random: bool,

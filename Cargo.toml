@@ -3,7 +3,7 @@ members = ["model-mapper", "model-mapper-macros"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 readme = "README.md"
@@ -12,7 +12,7 @@ keywords = ["model", "entity", "mapper", "from", "into"]
 categories = ["development-tools", "rust-patterns"]
 
 [workspace.dependencies]
-model-mapper-macros = { version = "=0.2.2", path = "./model-mapper-macros" }
+model-mapper-macros = { version = "=0.3.0", path = "./model-mapper-macros" }
 
 anyhow            = "1"
 chrono            = "0.4"
@@ -21,4 +21,6 @@ macro-field-utils = "0.2"
 proc-macro-error  = "1"
 proc-macro2       = "1"
 quote             = "1"
+serde             = "1"
+serde_json        = "1"
 syn               = "2"

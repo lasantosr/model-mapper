@@ -1,103 +1,102 @@
-use std::convert::Infallible;
+use chrono::{DateTime, Duration, FixedOffset, Local, NaiveDateTime, TimeZone, Utc};
 
-use chrono::{DateTime, Duration, FixedOffset, NaiveDateTime, Utc};
+use super::TypeMapper;
 
-use super::ExtraInto;
-
-impl ExtraInto<NaiveDateTime> for DateTime<Utc> {
-    fn into_extra(self) -> NaiveDateTime {
-        self.naive_utc()
+/// Mapper between different types of chrono date time
+pub struct DateTimeMapper;
+impl<T: TimeZone> TypeMapper<DateTime<T>, NaiveDateTime> for DateTimeMapper {
+    fn map(from: DateTime<T>) -> NaiveDateTime {
+        from.naive_utc()
+    }
+}
+impl TypeMapper<DateTime<Utc>, DateTime<FixedOffset>> for DateTimeMapper {
+    fn map(from: DateTime<Utc>) -> DateTime<FixedOffset> {
+        from.fixed_offset()
+    }
+}
+impl TypeMapper<DateTime<Utc>, DateTime<Local>> for DateTimeMapper {
+    fn map(from: DateTime<Utc>) -> DateTime<Local> {
+        from.into()
+    }
+}
+impl TypeMapper<DateTime<FixedOffset>, DateTime<Utc>> for DateTimeMapper {
+    fn map(from: DateTime<FixedOffset>) -> DateTime<Utc> {
+        from.to_utc()
+    }
+}
+impl TypeMapper<DateTime<FixedOffset>, DateTime<Local>> for DateTimeMapper {
+    fn map(from: DateTime<FixedOffset>) -> DateTime<Local> {
+        from.into()
+    }
+}
+impl TypeMapper<DateTime<Local>, DateTime<Utc>> for DateTimeMapper {
+    fn map(from: DateTime<Local>) -> DateTime<Utc> {
+        from.to_utc()
+    }
+}
+impl TypeMapper<DateTime<Local>, DateTime<FixedOffset>> for DateTimeMapper {
+    fn map(from: DateTime<Local>) -> DateTime<FixedOffset> {
+        from.fixed_offset()
+    }
+}
+impl TypeMapper<NaiveDateTime, DateTime<Utc>> for DateTimeMapper {
+    fn map(from: NaiveDateTime) -> DateTime<Utc> {
+        from.and_utc()
+    }
+}
+impl TypeMapper<NaiveDateTime, DateTime<FixedOffset>> for DateTimeMapper {
+    fn map(from: NaiveDateTime) -> DateTime<FixedOffset> {
+        from.and_utc().fixed_offset()
+    }
+}
+impl TypeMapper<NaiveDateTime, DateTime<Local>> for DateTimeMapper {
+    fn map(from: NaiveDateTime) -> DateTime<Local> {
+        from.and_utc().into()
     }
 }
 
-impl ExtraInto<NaiveDateTime> for DateTime<FixedOffset> {
-    fn into_extra(self) -> NaiveDateTime {
-        self.naive_utc()
+/// Mapper between chrono types and seconds
+pub struct SecondsMapper;
+impl TypeMapper<Duration, i64> for SecondsMapper {
+    fn map(from: Duration) -> i64 {
+        from.num_seconds()
+    }
+}
+impl TypeMapper<i64, Duration> for SecondsMapper {
+    fn map(from: i64) -> Duration {
+        Duration::seconds(from)
+    }
+}
+impl<T: TimeZone> TypeMapper<DateTime<T>, i64> for SecondsMapper {
+    fn map(from: DateTime<T>) -> i64 {
+        from.timestamp_millis() / 1000
+    }
+}
+impl TypeMapper<NaiveDateTime, i64> for SecondsMapper {
+    fn map(from: NaiveDateTime) -> i64 {
+        from.and_utc().timestamp_millis() / 1000
     }
 }
 
-impl ExtraInto<DateTime<FixedOffset>> for NaiveDateTime {
-    fn into_extra(self) -> DateTime<FixedOffset> {
-        self.and_utc().fixed_offset()
+/// Mapper between chrono types and milliseconds
+pub struct MillisecondsMapper;
+impl TypeMapper<Duration, i64> for MillisecondsMapper {
+    fn map(from: Duration) -> i64 {
+        from.num_milliseconds()
     }
 }
-
-/// Mapper between `NaiveDateTime` and `DateTime<Utc>`
-pub fn chrono_naive_to_utc(from: NaiveDateTime) -> DateTime<Utc> {
-    from.and_utc()
+impl TypeMapper<i64, Duration> for MillisecondsMapper {
+    fn map(from: i64) -> Duration {
+        Duration::milliseconds(from)
+    }
 }
-
-/// Mapper between `NaiveDateTime` and `DateTime<Utc>`
-pub fn try_chrono_naive_to_utc(from: NaiveDateTime) -> Result<DateTime<Utc>, Infallible> {
-    Ok(from.and_utc())
+impl<T: TimeZone> TypeMapper<DateTime<T>, i64> for MillisecondsMapper {
+    fn map(from: DateTime<T>) -> i64 {
+        from.timestamp_millis()
+    }
 }
-
-/// Mapper between `DateTime<Utc>` and `NaiveDateTime`
-pub fn chrono_utc_to_naive(from: DateTime<Utc>) -> NaiveDateTime {
-    from.naive_utc()
-}
-
-/// Mapper between `DateTime<Utc>` and `NaiveDateTime`
-pub fn try_chrono_utc_to_naive(from: DateTime<Utc>) -> Result<NaiveDateTime, Infallible> {
-    Ok(from.naive_utc())
-}
-
-/// Mapper between `NaiveDateTime` and `DateTime<FixedOffset>`
-pub fn chrono_naive_to_fixed_offset(from: NaiveDateTime) -> DateTime<FixedOffset> {
-    from.and_utc().fixed_offset()
-}
-
-/// Mapper between `NaiveDateTime` and `DateTime<FixedOffset>`
-pub fn try_chrono_naive_to_fixed_offset(from: NaiveDateTime) -> Result<DateTime<FixedOffset>, Infallible> {
-    Ok(from.and_utc().fixed_offset())
-}
-
-/// Mapper between `DateTime<FixedOffset>` and `NaiveDateTime`
-pub fn chrono_fixed_offset_to_naive(from: DateTime<FixedOffset>) -> NaiveDateTime {
-    from.naive_utc()
-}
-
-/// Mapper between `DateTime<FixedOffset>` and `NaiveDateTime`
-pub fn try_chrono_fixed_offset_to_naive(from: DateTime<FixedOffset>) -> Result<NaiveDateTime, Infallible> {
-    Ok(from.naive_utc())
-}
-
-/// Mapper between `Duration` and seconds in `i64`
-pub fn chrono_duration_to_seconds(from: Duration) -> i64 {
-    from.num_seconds()
-}
-
-/// Mapper between `Duration` and seconds in `i64`
-pub fn try_chrono_duration_to_seconds(from: Duration) -> Result<i64, Infallible> {
-    Ok(from.num_seconds())
-}
-
-/// Mapper between seconds in `i64` and `Duration`
-pub fn seconds_to_chrono_duration(from: i64) -> Duration {
-    Duration::seconds(from)
-}
-
-/// Mapper between seconds in `i64` and `Duration`
-pub fn try_seconds_to_chrono_duration(from: i64) -> Result<Duration, Infallible> {
-    Ok(Duration::seconds(from))
-}
-
-/// Mapper between `Duration` and milliseconds in `i64`
-pub fn chrono_duration_to_millis(from: Duration) -> i64 {
-    from.num_milliseconds()
-}
-
-/// Mapper between `Duration` and milliseconds in `i64`
-pub fn try_chrono_duration_to_millis(from: Duration) -> Result<i64, Infallible> {
-    Ok(from.num_milliseconds())
-}
-
-/// Mapper between milliseconds in `i64` and `Duration`
-pub fn millis_to_chrono_duration(from: i64) -> Duration {
-    Duration::milliseconds(from)
-}
-
-/// Mapper between milliseconds in `i64` and `Duration`
-pub fn try_millis_to_chrono_duration(from: i64) -> Result<Duration, Infallible> {
-    Ok(Duration::milliseconds(from))
+impl TypeMapper<NaiveDateTime, i64> for MillisecondsMapper {
+    fn map(from: NaiveDateTime) -> i64 {
+        from.and_utc().timestamp_millis()
+    }
 }

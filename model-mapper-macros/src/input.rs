@@ -147,9 +147,21 @@ pub(super) struct FieldReceiver {
     /// To use some function to map the values
     #[darling(default)]
     with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values
+    #[darling(default)]
+    into_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values
+    #[darling(default)]
+    from_with: Option<SpannedValue<syn::Path>>,
     /// To use some function to map the values when deriving Try
     #[darling(default)]
     try_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values when deriving Try
+    #[darling(default)]
+    into_try_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values when deriving Try
+    #[darling(default)]
+    from_try_with: Option<SpannedValue<syn::Path>>,
     /// To rename the field
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -170,9 +182,21 @@ struct ItemFieldInput {
     /// To use some function to map the values
     #[darling(default)]
     with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values
+    #[darling(default)]
+    into_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values
+    #[darling(default)]
+    from_with: Option<SpannedValue<syn::Path>>,
     /// To use some function to map the values when deriving Try
     #[darling(default)]
     try_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values when deriving Try
+    #[darling(default)]
+    into_try_with: Option<SpannedValue<syn::Path>>,
+    /// To use some function to map the values when deriving Try
+    #[darling(default)]
+    from_try_with: Option<SpannedValue<syn::Path>>,
     /// To rename the field
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -398,8 +422,20 @@ impl FieldReceiver {
             if let Some(with) = self.with.as_ref() {
                 emit_error!(with.span(), "Illegal attribute if 'when' is set")
             }
+            if let Some(into_with) = self.into_with.as_ref() {
+                emit_error!(into_with.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(from_with) = self.from_with.as_ref() {
+                emit_error!(from_with.span(), "Illegal attribute if 'when' is set")
+            }
             if let Some(try_with) = self.try_with.as_ref() {
                 emit_error!(try_with.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(into_try_with) = self.into_try_with.as_ref() {
+                emit_error!(into_try_with.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(from_try_with) = self.from_try_with.as_ref() {
+                emit_error!(from_try_with.span(), "Illegal attribute if 'when' is set")
             }
             if let Some(rename) = self.rename.as_ref() {
                 emit_error!(rename.span(), "Illegal attribute if 'when' is set")
@@ -455,37 +491,71 @@ impl FieldReceiver {
         }
     }
 
-    pub(super) fn with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
+    pub(super) fn into_with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
-                return item.with.as_deref();
+                return item.into_with.as_deref().or(item.with.as_deref());
             }
         }
         if let Some(path) = &self.path {
             if path.as_ref() == derive_path {
-                self.with.as_deref()
+                self.into_with.as_deref().or(self.with.as_deref())
             } else {
                 None
             }
         } else {
-            self.with.as_deref()
+            self.into_with.as_deref().or(self.with.as_deref())
         }
     }
 
-    pub(super) fn try_with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
+    pub(super) fn from_with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
-                return item.try_with.as_deref();
+                return item.from_with.as_deref().or(item.with.as_deref());
             }
         }
         if let Some(path) = &self.path {
             if path.as_ref() == derive_path {
-                self.try_with.as_deref()
+                self.from_with.as_deref().or(self.with.as_deref())
             } else {
                 None
             }
         } else {
-            self.try_with.as_deref()
+            self.from_with.as_deref().or(self.with.as_deref())
+        }
+    }
+
+    pub(super) fn into_try_with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
+        for item in &self.items {
+            if item.path.as_ref() == derive_path {
+                return item.into_try_with.as_deref().or(item.try_with.as_deref());
+            }
+        }
+        if let Some(path) = &self.path {
+            if path.as_ref() == derive_path {
+                self.into_try_with.as_deref().or(self.try_with.as_deref())
+            } else {
+                None
+            }
+        } else {
+            self.into_try_with.as_deref().or(self.try_with.as_deref())
+        }
+    }
+
+    pub(super) fn from_try_with_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
+        for item in &self.items {
+            if item.path.as_ref() == derive_path {
+                return item.from_try_with.as_deref().or(item.try_with.as_deref());
+            }
+        }
+        if let Some(path) = &self.path {
+            if path.as_ref() == derive_path {
+                self.from_try_with.as_deref().or(self.try_with.as_deref())
+            } else {
+                None
+            }
+        } else {
+            self.from_try_with.as_deref().or(self.try_with.as_deref())
         }
     }
 

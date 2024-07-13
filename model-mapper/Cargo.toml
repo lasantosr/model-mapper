@@ -17,9 +17,14 @@ default = []
 # Includes mappers for chrono types
 chrono = ["dep:chrono"]
 
+# Includes mappers for serde types
+serde = ["dep:serde", "dep:serde_json"]
+
 [dependencies]
 model-mapper-macros = { workspace = true }
 
 anyhow = { workspace = true }
 
-chrono = { workspace = true, optional = true }
+chrono     = { workspace = true, optional = true }
+serde      = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
