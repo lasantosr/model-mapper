@@ -51,14 +51,10 @@ The following attributes are available.
   - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it \*
   - `default = Expr` _(optional)_: If skipped, the default value to populate this field  (defaults to `Default::default()`)
   - `rename = "other_field"` _(optional)_: To rename this field on the other type
-  - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` the other, this property allows
-    you to customize the behavior by providing a conversion function
+  - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
+    property allows you to customize the behavior by providing a conversion function
   - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` derive
   - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` derive
-  - `try_with = mod::my_function` _(optional)_: If the field type doesn't implement `TryInto` the other, this property
-    allows you to customize the behavior by providing a conversion function
-  - `into_try_with = mod::my_function` _(optional)_: The same as above but only for the `try_into` derive
-  - `from_try_with = mod::my_function` _(optional)_: The same as above but only for the `try_from` derive
 
 **\*** When ignoring or skipping fields or variants it might be required that the enum or the field type implements
 `Default` in order to properly populate it if no default value is provided.

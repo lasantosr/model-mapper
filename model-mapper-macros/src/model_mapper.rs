@@ -163,12 +163,12 @@ fn derive_struct_from(
         .right_collector(|ix, f| {
             let ident = f.as_ident(ix);
             if is_try {
-                if let Some(try_with) = f.from_try_with_for(from_ty) {
+                if let Some(try_with) = f.with_from(from_ty) {
                     quote!(#try_with(#ident)?)
                 } else {
                     quote!(TryInto::try_into(#ident)?)
                 }
-            } else if let Some(with) = f.from_with_for(from_ty) {
+            } else if let Some(with) = f.with_from(from_ty) {
                 quote!(#with(#ident))
             } else {
                 quote!(Into::into(#ident))
@@ -249,12 +249,12 @@ fn derive_struct_into(
         .right_collector(|ix, f| {
             let ident = f.as_ident(ix);
             if is_try {
-                if let Some(try_with) = f.into_try_with_for(into_ty) {
+                if let Some(try_with) = f.with_into(into_ty) {
                     quote!(#try_with(#ident)?)
                 } else {
                     quote!(TryInto::try_into(#ident)?)
                 }
-            } else if let Some(with) = f.into_with_for(into_ty) {
+            } else if let Some(with) = f.with_into(into_ty) {
                 quote!(#with(#ident))
             } else {
                 quote!(Into::into(#ident))
@@ -348,12 +348,12 @@ fn derive_enum_from(
                 .right_collector(|ix, f| {
                     let ident = f.as_ident(ix);
                     if is_try {
-                        if let Some(try_with) = f.from_try_with_for(from_ty) {
+                        if let Some(try_with) = f.with_from(from_ty) {
                             quote!(#try_with(#ident)?)
                         } else {
                             quote!(TryInto::try_into(#ident)?)
                         }
-                    } else if let Some(with) = f.from_with_for(from_ty) {
+                    } else if let Some(with) = f.with_from(from_ty) {
                         quote!(#with(#ident))
                     } else {
                         quote!(Into::into(#ident))
@@ -463,12 +463,12 @@ fn derive_enum_into(
                 .right_collector(|ix, f| {
                     let ident = f.as_ident(ix);
                     if is_try {
-                        if let Some(try_with) = f.into_try_with_for(into_ty) {
+                        if let Some(try_with) = f.with_into(into_ty) {
                             quote!(#try_with(#ident)?)
                         } else {
                             quote!(TryInto::try_into(#ident)?)
                         }
-                    } else if let Some(with) = f.into_with_for(into_ty) {
+                    } else if let Some(with) = f.with_into(into_ty) {
                         quote!(#with(#ident))
                     } else {
                         quote!(Into::into(#ident))

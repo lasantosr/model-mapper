@@ -2,6 +2,10 @@
 
 use std::{collections::HashMap, convert::Infallible, hash::Hash, str::FromStr};
 
+use error::MapperError;
+
+pub mod error;
+
 #[cfg(feature = "chrono")]
 pub mod chrono;
 
@@ -95,7 +99,7 @@ pub trait TypeMapper<F, I> {
     /// Maps between types
     fn map(from: F) -> I;
     /// Maps between types
-    fn try_map<E>(from: F) -> Result<I, E> {
+    fn try_map(from: F) -> Result<I, Infallible> {
         Ok(Self::map(from))
     }
     /// Maps between [Wrapper] types
@@ -121,7 +125,7 @@ pub trait TypeMapper<F, I> {
         from.map_wrapper(Self::map)
     }
     /// Maps between [Wrapper] types
-    fn try_map_nested_wrapped<NW, W, E>(from: NW) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, Infallible>
+    fn try_map_nested_wrapped<NW, W>(from: NW) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, Infallible>
     where
         NW: NestedWrapper<W, F>,
         W: Wrapper<F>,
@@ -133,7 +137,7 @@ pub trait TypeMapper<F, I> {
         Some(Self::map(from))
     }
     /// Maps encapsulating into an [Option]
-    fn try_map_into_option<E>(from: F) -> Result<Option<I>, Infallible> {
+    fn try_map_into_option(from: F) -> Result<Option<I>, Infallible> {
         Ok(Self::map_into_option(from))
     }
     /// Maps a [Wrapper] encapsulating into an [Option]
@@ -144,7 +148,7 @@ pub trait TypeMapper<F, I> {
         Some(Self::map_wrapped(from))
     }
     /// Maps a [Wrapper] encapsulating into an [Option]
-    fn try_map_wrapped_into_option<W, E>(from: W) -> Result<Option<<W as Wrapper<F>>::Wrapper<I>>, Infallible>
+    fn try_map_wrapped_into_option<W>(from: W) -> Result<Option<<W as Wrapper<F>>::Wrapper<I>>, Infallible>
     where
         W: Wrapper<F>,
     {
@@ -159,7 +163,7 @@ pub trait TypeMapper<F, I> {
         Some(Self::map_nested_wrapped(from))
     }
     /// Maps a nested [Wrapper] encapsulating into an [Option]
-    fn try_map_nested_wrapped_into_option<NW, W, Infallible>(
+    fn try_map_nested_wrapped_into_option<NW, W>(
         from: NW,
     ) -> Result<Option<<NW as NestedWrapper<W, F>>::NestedWrapper<I>>, Infallible>
     where
@@ -169,28 +173,28 @@ pub trait TypeMapper<F, I> {
         Ok(Self::map_nested_wrapped_into_option(from))
     }
     /// Maps removing an [Option]
-    fn try_map_removing_option(from: Option<F>) -> Result<I, anyhow::Error> {
+    fn try_map_removing_option(from: Option<F>) -> Result<I, MapperError> {
         from.map(Self::map)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))
+            .ok_or_else(|| MapperError::new("The value was required but not present"))
     }
     /// Maps a wrapped type removing an [Option]
-    fn try_map_wrapped_removing_option<W>(from: Option<W>) -> Result<<W as Wrapper<F>>::Wrapper<I>, anyhow::Error>
+    fn try_map_wrapped_removing_option<W>(from: Option<W>) -> Result<<W as Wrapper<F>>::Wrapper<I>, MapperError>
     where
         W: Wrapper<F>,
     {
         from.map(Self::map_wrapped)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))
+            .ok_or_else(|| MapperError::new("The value was required but not present"))
     }
     /// Maps a nested wrapped type removing an [Option]
     fn try_map_nested_wrapped_removing_option<NW, W>(
         from: Option<NW>,
-    ) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, anyhow::Error>
+    ) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, MapperError>
     where
         NW: NestedWrapper<W, F>,
         W: Wrapper<F>,
     {
         from.map(Self::map_nested_wrapped)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))
+            .ok_or_else(|| MapperError::new("The value was required but not present"))
     }
 }
 
@@ -215,7 +219,7 @@ pub trait TypeFallibleMapper<F, I> {
         from.try_map_wrapper(Self::try_map)
     }
     /// Maps encapsulating into an [Option]
-    fn try_map_into_option<E>(from: F) -> Result<Option<I>, Self::Error> {
+    fn try_map_into_option(from: F) -> Result<Option<I>, Self::Error> {
         Self::try_map(from).map(Some)
     }
     /// Maps a [Wrapper] encapsulating into an [Option]
@@ -237,36 +241,36 @@ pub trait TypeFallibleMapper<F, I> {
         Self::try_map_nested_wrapped(from).map(Some)
     }
     /// Maps removing an [Option]
-    fn try_map_removing_option(from: Option<F>) -> Result<I, anyhow::Error>
+    fn try_map_removing_option(from: Option<F>) -> Result<I, MapperError>
     where
         Self::Error: std::error::Error + Send + Sync + 'static,
     {
         from.map(Self::try_map)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))?
-            .map_err(Into::into)
+            .ok_or_else(|| MapperError::new("The value was required but not present"))?
+            .map_err(MapperError::from)
     }
     /// Maps a wrapped type removing an [Option]
-    fn try_map_wrapped_removing_option<W>(from: Option<W>) -> Result<<W as Wrapper<F>>::Wrapper<I>, anyhow::Error>
+    fn try_map_wrapped_removing_option<W>(from: Option<W>) -> Result<<W as Wrapper<F>>::Wrapper<I>, MapperError>
     where
         W: Wrapper<F>,
         Self::Error: std::error::Error + Send + Sync + 'static,
     {
         from.map(Self::try_map_wrapped)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))?
-            .map_err(Into::into)
+            .ok_or_else(|| MapperError::new("The value was required but not present"))?
+            .map_err(MapperError::from)
     }
     /// Maps a nested wrapped type removing an [Option]
     fn try_map_nested_wrapped_removing_option<NW, W>(
         from: Option<NW>,
-    ) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, anyhow::Error>
+    ) -> Result<<NW as NestedWrapper<W, F>>::NestedWrapper<I>, MapperError>
     where
         NW: NestedWrapper<W, F>,
         W: Wrapper<F>,
         Self::Error: std::error::Error + Send + Sync + 'static,
     {
         from.map(Self::try_map_nested_wrapped)
-            .ok_or_else(|| anyhow::anyhow!("The value was required but not present"))?
-            .map_err(Into::into)
+            .ok_or_else(|| MapperError::new("The value was required but not present"))?
+            .map_err(MapperError::from)
     }
 }
 

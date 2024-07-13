@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::str::FromStr;
-
 use model_mapper::{
     with::{IntoMapper, TryIntoMapper, TypeFallibleMapper, TypeMapper},
     Mapper,
@@ -46,9 +44,9 @@ pub struct ModelTryFrom {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
+    #[mapper(with = TryIntoMapper::try_map_wrapped)]
     age: Option<i16>,
-    #[mapper(try_with = TryIntoMapper::try_map_nested_wrapped)]
+    #[mapper(with = TryIntoMapper::try_map_nested_wrapped)]
     sizes: Option<Vec<i16>>,
 }
 
@@ -58,9 +56,9 @@ pub struct ModelTryInto {
     id: i64,
     name: String,
     fav_number: Option<i32>,
-    #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
+    #[mapper(with = TryIntoMapper::try_map_wrapped)]
     age: Option<i64>,
-    #[mapper(try_with = TryIntoMapper::try_map_nested_wrapped)]
+    #[mapper(with = TryIntoMapper::try_map_nested_wrapped)]
     sizes: Option<Vec<i64>>,
 }
 
@@ -90,7 +88,7 @@ pub struct ModelMultiple {
     id: i64,
     #[mapper(when(ty = OtherEntity, rename = "first_name"))]
     name: String,
-    #[mapper(when(ty = Entity, try_with = TryIntoMapper::try_map_removing_option))]
+    #[mapper(when(ty = Entity, with = TryIntoMapper::try_map_removing_option))]
     #[mapper(when(ty = OtherEntity, skip))]
     age: i32,
     #[mapper(when(ty = Entity, skip))]
@@ -104,26 +102,7 @@ pub struct EntityTuple(i32, i32);
 
 #[derive(Mapper)]
 #[mapper(from, into, ty = EntityTuple)]
-pub struct ModelTuple(
-    i32,
-    #[mapper(into_with = FromStringMapper::map, from_with = ToStringMapper::map)] String,
-);
-
-struct ToStringMapper;
-impl<T: ToString> TypeMapper<T, String> for ToStringMapper {
-    fn map(from: T) -> String {
-        from.to_string()
-    }
-}
-struct FromStringMapper;
-impl<T: FromStr> TypeMapper<String, T> for FromStringMapper
-where
-    <T as FromStr>::Err: std::fmt::Debug,
-{
-    fn map(from: String) -> T {
-        from.parse().unwrap()
-    }
-}
+pub struct ModelTuple(i32, i32);
 
 pub enum EntityEnum {
     Empty,
@@ -147,8 +126,8 @@ pub enum ModelEnum {
         id: i64,
         #[mapper(rename = "name")]
         first_name: String,
-        #[mapper(with = IntoMapper::map_wrapped)]
-        #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
+        #[mapper(into_with = IntoMapper::map_wrapped)]
+        #[mapper(from_with = TryIntoMapper::try_map_wrapped)]
         age: Option<i16>,
         #[mapper(skip, default = true)]
         random: bool,
