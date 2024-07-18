@@ -4,113 +4,85 @@ mod model_mapper;
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 
-/// Derives [From] and/or [TryFrom] another type to this one, or vice versa.
+/// Derive mapper functions to convert between types.
 ///
 /// A `mapper` attribute is required at type-level and it's optional at field or variant level.
-///
-/// Attributes can be set directly if only one type is involved in the conversion:
-/// ``` ignore
-/// #[mapper(from, into, ty = OtherType, ignore(field = field_1), ignore(field = field_2))]
-/// ```
-/// Or they can be wrapped in a `derive` attribute to allow for multiple types:
-/// ``` ignore
-/// #[mapper(derive(try_from, ty = OtherType, ignore(field = field_1)))]
-/// #[mapper(derive(into, ty = YetAnotherType))]
-/// ```
-///
-/// If multiple types are involved, both variant and field level attributes can also be wrapped in a `when` attribute
-/// and must set the `ty` they refer to:
-/// ``` ignore
-/// #[mapper(when(ty = OtherType, try_with = TryIntoMapper::try_map_removing_option))]
-/// #[mapper(when(ty = YetAnotherType, skip))]
-/// ```
 ///
 /// The following attributes are available:
 ///
 /// #### Type level attributes
-/// - `ty = String` _(**mandatory**)_: The other type to derive the conversion
+///
+/// - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
+/// - `from` _(optional)_: Wether to derive `From` the other type for self
+///   - `custom` _(optional)_: Derive a custom function instead of the trait
+///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
+/// - `into` _(optional)_: Wether to derive `From` self for the other type
+///   - `custom` _(optional)_: Derive a custom function instead of the trait
+///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
+/// - `try_from` _(optional)_: Wether to derive `TryFrom` the other type for self
+///   - `custom` _(optional)_: Derive a custom function instead of the trait
+///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
+/// - `try_into` _(optional)_: Wether to derive `TryFrom` self for the other type
+///   - `custom` _(optional)_: Derive a custom function instead of the trait
+///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
+/// - `add` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the other
+///   type has and this one doesn't **&#x00b9;**
+///   - `field = other_field` _(mandatory)_: The field or variant name
+///   - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
+///   - `default` _(optional)_: The field or variant will be populated using `Default::default()` (mandatory for enums,
+///     with or without value)
+///     - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
 /// - `ignore_extra` _(optional)_: Wether to ignore all extra fields (for structs) or variants (for enums) of the other
-///   type \*
-/// - `ignore` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
-///   other type has and this one doesn't \*
-///   - `field = String` _(mandatory)_: The field or variant to ignore
-///   - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
-/// - `from` _(optional)_: Wether to derive [From] the other type for self
-/// - `into` _(optional)_: Wether to derive [From] self for the other type
-/// - `try_from` _(optional)_: Wether to derive [TryFrom] the other type for self
-/// - `try_into` _(optional)_: Wether to derive [TryFrom] self for the other type
+///   type **&#x00b2;**
 ///
 /// #### Variant level attributes
+///
+/// - `rename = OtherVariant` _(optional)_: To rename this variant on the other enum
+/// - `add` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
+///   doesn't **&#x00b9;**
+///   - `field = other_field` _(mandatory)_: The field name
+///   - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
+///   - `default` _(optional)_: The field or variant will be populated using `Default::default()`
+///     - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
+/// - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it
+///   - `default` _(mandatory)_: The field or variant will be populated using `Default::default()`
+///     - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression
+///       instead
 /// - `ignore_extra` _(optional)_: Wether to ignore all extra fields of the other variant (only valid for _from_ and
-///   _try_from_) \*
-/// - `ignore` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
-///   doesn't \*
-///   - `field = String` _(mandatory)_: The field or variant to ignore
-///   - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
-/// - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it \*
-/// - `default = Expr` _(optional)_: If skipped, the default value to populate this variant  (defaults to
-///   `Default::default()`)
-/// - `rename = "OtherVariant"` _(optional)_: To rename this variant on the other enum
+///   _try_from_) **&#x00b2;**
 ///
 /// #### Field level attributes
-/// - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it \*
-/// - `default = Expr` _(optional)_: If skipped, the default value to populate this field  (defaults to
-///   `Default::default()`)
-/// - `rename = "other_field"` _(optional)_: To rename this field on the other type
-/// - `with = mod::my_function` _(optional)_: If the field type doesn't implement [Into] or [TryInto] the other, this
+///
+/// - `rename = other_name` _(optional)_: To rename this field on the other type
+/// - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it
+///   - `default` _(optional)_: The field or variant will be populated using `Default::default()`
+///     - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression
+///       instead
+/// - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
 ///   property allows you to customize the behavior by providing a conversion function
-/// - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` derive
-/// - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` derive
+/// - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` or `try_into` derives
+/// - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives
 ///
-/// **\*** When ignoring or skipping fields or variants it might be required that the enum or the field type implements
-/// [Default] in order to properly populate it if no default is provided.
+/// **&#x00b9;** When providing additional fields without defaults, the `From` and `TryFrom` traits can't be derived and
+/// a custom function will be required instead. When deriving `into` or `try_into`, the `ty` must be provided as well.
 ///
-/// ## Examples
+/// **&#x00b2;** When ignoring fields or variants it might be required that the enum or the struct implements `Default`
+/// in order to properly populate it.
 ///
-/// ```
-/// # use model_mapper_macros::Mapper;
-/// # #[derive(Default)]
-/// # pub enum ResponseModel {
-/// #     #[default]
-/// #     Empty,
-/// #     Text(String),
-/// #     Data {
-/// #         id: i64,
-/// #         text: String,
-/// #         status: Option<i32>,
-/// #         internal: bool,
-/// #     },
-/// #     Unknown,
-/// # }
-/// # pub struct IntoMapper;
-/// # impl IntoMapper {
-/// #     pub fn map_wrapped<F,I>(opt: Option<F>) -> Option<I> { unreachable!() }
-/// # }
-/// # pub struct TryIntoMapper;
-/// # impl TryIntoMapper {
-/// #     pub fn try_map_wrapped<F,I>(opt: Option<F>) -> Result<Option<I>, std::io::Error> { unreachable!() }
-/// # }
+/// ## Example
+///
+/// ```rs
 /// #[derive(Mapper)]
-/// #[mapper(try_from, into, ty = ResponseModel, ignore(field = Unknown, default = CustomResponse::Empty))]
-/// pub enum CustomResponse {
-///     Empty,
-///     #[mapper(rename = Text)]
-///     Message(String),
-///     #[mapper(ignore(field = internal))]
-///     Data {
-///         id: i64,
-///         #[mapper(rename = "text")]
-///         message: String,
-///         #[mapper(with = IntoMapper::map_wrapped)]
-///         #[mapper(try_with = TryIntoMapper::try_map_wrapped)]
-///         status: Option<i16>,
-///         #[mapper(skip)]
-///         random: bool,
-///     },
-///     #[mapper(skip)]
-///     Error,
+/// #[mapper(from, ty = Entity)]
+/// pub struct Model {
+///     id: i64,
+///     name: String,
+///     #[mapper(skip(default))]
+///     surname: Option<String>,
 /// }
 /// ```
+///
+/// Other advanced use cases are available on the [examples folder](https://github.com/lasantosr/model-mapper/tree/main/model-mapper/examples/).
 #[proc_macro_error]
 #[proc_macro_derive(Mapper, attributes(mapper))]
 pub fn model_mapper(input: TokenStream) -> TokenStream {

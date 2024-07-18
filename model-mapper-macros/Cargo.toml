@@ -15,6 +15,7 @@ proc-macro = true
 
 [dependencies]
 darling           = { workspace = true }
+heck              = { workspace = true }
 macro-field-utils = { workspace = true }
 proc-macro-error  = { workspace = true }
 proc-macro2       = { workspace = true }

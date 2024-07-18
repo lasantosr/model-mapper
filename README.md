@@ -1,18 +1,76 @@
 # Model Mapper
 
-This library provides a macro to implement `From` and/or `TryFrom` trait between types (both enums and structs) without boilerplate.
+This library provides a macro to implement functions to convert between types (both enums and structs) without boilerplate.
 
 It also provides a `with` module containing some utilities to convert between types that does not implement `Into` trait.
 
+## Examples
+
+The most common use case for this crate is to map between domain entities on services and externally-faced models or DTOs.
+
 ```rs
-#[derive(Clone, Default, Mapper)]
+#[derive(Mapper)]
 #[mapper(from, ty = Entity)]
 pub struct Model {
     id: i64,
     name: String,
-    age: Option<i64>,
 }
 ```
+
+The macro expansion above would generate something like:
+
+```rs
+impl From<Entity> for Model {
+    fn from(Entity { id, name }: Entity) -> Self {
+        Self {
+            id: Into::into(id),
+            name: Into::into(name),
+        }
+    }
+}
+```
+
+Because types doesn't always fit like a glove, you can provide additional fields on runtime, at the cost of not being
+able to use the `From` trait:
+
+```rs
+pub mod service {
+    pub struct UpdateUserInput {
+        pub user_id: i64,
+        pub name: Option<String>,
+        pub surname: Option<String>,
+    }
+}
+
+#[derive(Mapper)]
+#[mapper(
+    into(custom = "into_update_user"),
+    ty = service::UpdateUserInput,
+    add(field = user_id, ty = i64),
+    add(field = surname, default(value = None))
+)]
+pub struct UpdateProfileRequest {
+    pub name: String,
+}
+```
+
+Would generate something like:
+
+```rs
+impl UpdateProfileRequest {
+    /// Builds a new [service::UpdateUserInput] from a [UpdateProfileRequest]
+    pub fn into_update_user(self, user_id: i64) -> service::UpdateUserInput {
+        let UpdateProfileRequest { name } = self;
+        service::UpdateUserInput {
+            user_id,
+            surname: None,
+            name: Into::into(name),
+        }
+    }
+}
+```
+
+Other advanced use cases are available on the [examples folder](./model-mapper/examples/).
 
 ## Usage
 
@@ -23,145 +81,79 @@ The following attributes are available.
 - Type level attributes:
 
   - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
-  - `ignore_extra` _(optional)_: Wether to ignore all extra fields (for structs) or variants (for enums) of the other
-    type \*
-  - `ignore` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
-    other type has and this one doesn't \*
-    - `field = String` _(mandatory)_: The field or variant to ignore
-    - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
   - `from` _(optional)_: Wether to derive `From` the other type for self
+    - `custom` _(optional)_: Derive a custom function instead of the trait
+    - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
   - `into` _(optional)_: Wether to derive `From` self for the other type
+    - `custom` _(optional)_: Derive a custom function instead of the trait
+    - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
   - `try_from` _(optional)_: Wether to derive `TryFrom` the other type for self
+    - `custom` _(optional)_: Derive a custom function instead of the trait
+    - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
   - `try_into` _(optional)_: Wether to derive `TryFrom` self for the other type
+    - `custom` _(optional)_: Derive a custom function instead of the trait
+    - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
+  - `add` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
+    other type has and this one doesn't **&#x00b9;**
+    - `field = other_field` _(mandatory)_: The field or variant name
+    - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
+    - `default` _(optional)_: The field or variant will be populated using `Default::default()` (mandatory for enums,
+      with or without value)
+      - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
+  - `ignore_extra` _(optional)_: Wether to ignore all extra fields (for structs) or variants (for enums) of the other
+    type **&#x00b2;**
 
 - Variant level attributes:
 
+  - `rename = OtherVariant` _(optional)_: To rename this variant on the other enum
+  - `add` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
+    doesn't **&#x00b9;**
+    - `field = other_field` _(mandatory)_: The field name
+    - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
+    - `default` _(optional)_: The field or variant will be populated using `Default::default()`
+      - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
+  - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it
+    - `default` _(mandatory)_: The field or variant will be populated using `Default::default()`
+      - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
   - `ignore_extra` _(optional)_: Wether to ignore all extra fields of the other variant (only valid for _from_ and
-    _try_from_) \*
-  - `ignore` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
-    doesn't \*
-    - `field = String` _(mandatory)_: The field or variant to ignore
-    - `default = Expr` _(optional)_: The default value (defaults to `Default::default()`)
-  - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it \*
-  - `default = Expr` _(optional)_: If skipped, the default value to populate this variant (defaults to `Default::default()`)
-  - `rename = "OtherVariant"` _(optional)_: To rename this variant on the other enum
+    _try_from_) **&#x00b2;**
 
 - Field level attributes:
 
-  - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it \*
-  - `default = Expr` _(optional)_: If skipped, the default value to populate this field  (defaults to `Default::default()`)
-  - `rename = "other_field"` _(optional)_: To rename this field on the other type
+  - `rename = other_name` _(optional)_: To rename this field on the other type
+  - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it
+    - `default` _(optional)_: The field or variant will be populated using `Default::default()`
+      - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
   - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
     property allows you to customize the behavior by providing a conversion function
-  - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` derive
-  - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` derive
+  - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` or `try_into` derives
+  - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives
 
-**\*** When ignoring or skipping fields or variants it might be required that the enum or the field type implements
-`Default` in order to properly populate it if no default value is provided.
+**&#x00b9;** When providing additional fields without defaults, the `From` and `TryFrom` traits can't be derived and a
+custom function will be required instead. When deriving `into` or `try_into`, the `ty` must be provided as well.
 
-Attributes can be set directly if only one type is involved in the conversion:
+**&#x00b2;** When ignoring fields or variants it might be required that the enum or the struct implements `Default`
+in order to properly populate it.
+
+### Multiple derives
+
+When deriving conversions for a single type, attributes can be set directly:
 
 ```rs
-#[mapper(from, into, ty = OtherType, ignore(field = field_1), ignore(field = field_2))]
+#[mapper(from, into, ty = OtherType, add(field = field_1, default), add(field = field_2, default))]
 ```
 
-Or they can be wrapped in a `derive` attribute to allow for multiple conversions:
+But we can also derive conversions for multiple types by wrapping the properties on a `derive` attribute:
 
 ```rs
-#[mapper(derive(try_from, ty = OtherType, ignore(field = field_1)))]
-#[mapper(derive(into, ty = YetAnotherType))]
+#[mapper(derive(try_into, ty = OtherType, add(field = field_1, default)))]
+#[mapper(derive(from, ty = YetAnotherType))]
 ```
 
 If multiple conversions are involved, both variant and field level attributes can also be wrapped in a `when` attribute
 and must set the `ty` they refer to:
 
 ```rs
-#[mapper(when(ty = OtherType, try_with = with::try_remove_option))]
-#[mapper(when(ty = YetAnotherType, skip))]
+#[mapper(when(ty = OtherType, with = TryIntoMapper::try_map_removing_option))]
+#[mapper(when(ty = YetAnotherType, skip(default)))]
 ```
-
-## Example
-
-```rs
-pub enum Model {
-    Empty,
-    Text(String),
-    Data {
-        id: i64,
-        text: String,
-        status: Option<i32>,
-        internal: bool,
-    },
-    Unknown,
-}
-
-#[derive(Default, Mapper)]
-#[mapper(try_from, into, ty = Model, ignore(field = Unknown))]
-pub enum Entity {
-    Empty,
-    #[mapper(rename = Text)]
-    Message(String),
-    #[mapper(ignore(field = internal))]
-    Data {
-        id: i64,
-        #[mapper(rename = "text")]
-        message: String,
-        #[mapper(with = with::option)]
-        #[mapper(try_with = with::try_option)]
-        status: Option<i16>,
-        #[mapper(skip, default = true)]
-        random: bool,
-    },
-    #[mapper(skip, default = Model::Unknown)]
-    #[default]
-    Error,
-}
-```
-
-The macro expansion above would generate something like:
-
-```rs
-impl From<Entity> for Model {
-    fn from(other: Entity) -> Self {
-        match other {
-            Entity::Empty => Model::Empty,
-            Entity::Message(m) => Model::Text(Into::into(m)),
-            Entity::Data {
-                id: id,
-                message: message,
-                status: status,
-                random: _,
-            } => Model::Data {
-                id: Into::into(id),
-                text: Into::into(message),
-                status: with::option(status),
-                internal: Default::default(),
-            },
-            Entity::Error => Model::Unknown,
-        }
-    }
-}
-impl TryFrom<Model> for Entity {
-    type Error = ::anyhow::Error;
-    fn try_from(other: Model) -> Result<Self, <Self as TryFrom<Model>>::Error> {
-        Ok(match other {
-            Model::Empty => Entity::Empty,
-            Model::Text(t) => Entity::Message(TryInto::try_into(t)?),
-            Model::Data {
-                id: id,
-                text: message,
-                status: status,
-                internal: _,
-            } => Entity::Data {
-                id: TryInto::try_into(id)?,
-                message: TryInto::try_into(message)?,
-                status: with::try_option(status)?,
-                random: true,
-            },
-            Model::Unknown => Default::default(),
-        })
-    }
-}
-```
-
-There are more examples available in the integration tests.
