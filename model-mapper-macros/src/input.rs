@@ -35,10 +35,10 @@ pub(super) struct MapperOpts {
     /// Whether to derive [TryFrom] self to the type
     #[darling(default)]
     try_into: Option<SpannedValue<Override<DeriveInput>>>,
-    /// Wether the other type have some additional variants/fields
+    /// Whether the other type have some additional variants/fields
     #[darling(default, multiple)]
     add: Vec<AddInput>,
-    /// Wether to ignore all extra fields/variants of the other type
+    /// Whether to ignore all extra fields/variants of the other type
     #[darling(default)]
     ignore_extra: SpannedValue<Flag>,
 }
@@ -60,10 +60,10 @@ pub(super) struct ItemInput {
     /// Whether to derive [TryFrom] self to the type
     #[darling(default)]
     pub(super) try_into: Option<SpannedValue<Override<DeriveInput>>>,
-    /// Wether the other type have some additional variants/fields
+    /// Whether the other type have some additional variants/fields
     #[darling(default, multiple)]
     pub(super) add: Vec<AddInput>,
-    /// Wether to ignore all extra fields/variants of the other type
+    /// Whether to ignore all extra fields/variants of the other type
     #[darling(default)]
     pub(super) ignore_extra: SpannedValue<Flag>,
 }
@@ -87,13 +87,13 @@ pub(super) struct VariantReceiver {
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
-    /// Wether the other type have some additional fields on the variant
+    /// Whether the other type have some additional fields on the variant
     #[darling(default, multiple)]
     add: Vec<AddInput>,
     /// To skip this variant when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
-    /// Wether to ignore all extra fields of the other variant
+    /// Whether to ignore all extra fields of the other variant
     #[darling(default)]
     ignore_extra: SpannedValue<Flag>,
 }
@@ -107,13 +107,13 @@ struct ItemVariantInput {
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
-    /// Wether the other type have some additional fields on the variant
+    /// Whether the other type have some additional fields on the variant
     #[darling(default, multiple)]
     add: Vec<AddInput>,
     /// To skip this variant when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
-    /// Wether to ignore all extra fields of the other variant
+    /// Whether to ignore all extra fields of the other variant
     #[darling(default)]
     ignore_extra: SpannedValue<Flag>,
 }
@@ -176,7 +176,7 @@ struct ItemFieldInput {
 
 #[derive(Debug, FromMeta, Clone)]
 pub(super) struct DeriveInput {
-    /// Wether the derive has external properties or not (name of the custom function if populated)
+    /// Whether the derive has external properties or not (name of the custom function if populated)
     #[darling(default)]
     pub(super) custom: Option<SpannedValue<Override<syn::Ident>>>,
 }

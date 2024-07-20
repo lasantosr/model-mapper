@@ -81,16 +81,16 @@ The following attributes are available.
 - Type level attributes:
 
   - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
-  - `from` _(optional)_: Wether to derive `From` the other type for self
+  - `from` _(optional)_: Whether to derive `From` the other type for self
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-  - `into` _(optional)_: Wether to derive `From` self for the other type
+  - `into` _(optional)_: Whether to derive `From` self for the other type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-  - `try_from` _(optional)_: Wether to derive `TryFrom` the other type for self
+  - `try_from` _(optional)_: Whether to derive `TryFrom` the other type for self
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-  - `try_into` _(optional)_: Wether to derive `TryFrom` self for the other type
+  - `try_into` _(optional)_: Whether to derive `TryFrom` self for the other type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
   - `add` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
@@ -100,7 +100,7 @@ The following attributes are available.
     - `default` _(optional)_: The field or variant will be populated using `Default::default()` (mandatory for enums,
       with or without value)
       - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
-  - `ignore_extra` _(optional)_: Wether to ignore all extra fields (for structs) or variants (for enums) of the other
+  - `ignore_extra` _(optional)_: Whether to ignore all extra fields (for structs) or variants (for enums) of the other
     type **&#x00b2;**
 
 - Variant level attributes:
@@ -112,16 +112,16 @@ The following attributes are available.
     - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
     - `default` _(optional)_: The field or variant will be populated using `Default::default()`
       - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
-  - `skip` _(optional)_: Wether to skip this variant because the other enum doesn't have it
+  - `skip` _(optional)_: Whether to skip this variant because the other enum doesn't have it
     - `default` _(mandatory)_: The field or variant will be populated using `Default::default()`
       - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
-  - `ignore_extra` _(optional)_: Wether to ignore all extra fields of the other variant (only valid for _from_ and
+  - `ignore_extra` _(optional)_: Whether to ignore all extra fields of the other variant (only valid for _from_ and
     _try_from_) **&#x00b2;**
 
 - Field level attributes:
 
   - `rename = other_name` _(optional)_: To rename this field on the other type
-  - `skip` _(optional)_: Wether to skip this field because the other type doesn't have it
+  - `skip` _(optional)_: Whether to skip this field because the other type doesn't have it
     - `default` _(optional)_: The field or variant will be populated using `Default::default()`
       - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
   - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this

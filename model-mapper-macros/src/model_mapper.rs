@@ -224,7 +224,7 @@ fn derive_struct_from(
             })
             .collect::<Vec<_>>();
 
-        // Compute the function name, wether is provided or not
+        // Compute the function name, whether is provided or not
         let fn_name = custom.clone().explicit().unwrap_or_else(|| {
             format_ident!(
                 "{}_{}",
@@ -393,7 +393,7 @@ fn derive_struct_into(
             })
             .collect::<Vec<_>>();
 
-        // Compute the function name, wether is provided or not
+        // Compute the function name, whether is provided or not
         let fn_name = custom.clone().explicit().unwrap_or_else(|| {
             format_ident!(
                 "{}_{}",
@@ -619,7 +619,7 @@ fn derive_enum_from(
             })
             .collect::<Vec<_>>();
 
-        // Compute the function name, wether is provided or not
+        // Compute the function name, whether is provided or not
         let fn_name = custom.clone().explicit().unwrap_or_else(|| {
             format_ident!(
                 "{}_{}",
@@ -842,7 +842,7 @@ fn derive_enum_into(
             })
             .collect::<Vec<_>>();
 
-        // Compute the function name, wether is provided or not
+        // Compute the function name, whether is provided or not
         let fn_name = custom.clone().explicit().unwrap_or_else(|| {
             format_ident!(
                 "{}_{}",
