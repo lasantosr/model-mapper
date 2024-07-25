@@ -4,6 +4,9 @@ This library provides a macro to implement functions to convert between types (b
 
 It also provides a `with` module containing some utilities to convert between types that does not implement `Into` trait.
 
+As long as you don't use the `with` module and don't derive `try_into` or `try_form`, this lib can be used in
+`#![no_std]` crates.
+
 ## Examples
 
 The most common use case for this crate is to map between domain entities on services and externally-faced models or DTOs.
