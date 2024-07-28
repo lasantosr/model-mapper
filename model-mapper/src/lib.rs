@@ -1,3 +1,4 @@
+#[cfg(feature = "with")]
 pub mod with;
 
 // Re-export derive macro crate
