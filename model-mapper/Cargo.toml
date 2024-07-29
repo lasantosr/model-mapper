@@ -14,8 +14,11 @@ categories.workspace = true
 [features]
 default = ["with"]
 
+# Requires a dependency on the Rust standard library
+std = []
+
 # Includes some utils for `with` feature
-with = ["dep:anyhow"]
+with = ["std", "dep:anyhow"]
 
 # Includes mappers for chrono types
 chrono = ["with", "dep:chrono"]
