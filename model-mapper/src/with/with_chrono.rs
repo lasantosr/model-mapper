@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, FixedOffset, Local, NaiveDateTime, TimeZone, Utc};
 
-use super::TypeMapper;
+use super::{error::MapperError, TypeFallibleMapper, TypeMapper};
 
 /// Mapper between different types of chrono date time
 pub struct DateTimeMapper;
@@ -69,12 +69,46 @@ impl TypeMapper<i64, Duration> for SecondsMapper {
 }
 impl<T: TimeZone> TypeMapper<DateTime<T>, i64> for SecondsMapper {
     fn map(from: DateTime<T>) -> i64 {
-        from.timestamp_millis() / 1000
+        from.timestamp()
     }
 }
 impl TypeMapper<NaiveDateTime, i64> for SecondsMapper {
     fn map(from: NaiveDateTime) -> i64 {
-        from.and_utc().timestamp_millis() / 1000
+        from.and_utc().timestamp()
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<Utc>> for SecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<Utc>, Self::Error> {
+        DateTime::from_timestamp(from, 0).ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<FixedOffset>> for SecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<FixedOffset>, Self::Error> {
+        DateTime::from_timestamp(from, 0)
+            .map(Into::into)
+            .ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<Local>> for SecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<Local>, Self::Error> {
+        DateTime::from_timestamp(from, 0)
+            .map(Into::into)
+            .ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, NaiveDateTime> for SecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<NaiveDateTime, Self::Error> {
+        DateTime::from_timestamp(from, 0)
+            .map(|d| d.naive_utc())
+            .ok_or_else(|| MapperError::new("Date out of range"))
     }
 }
 
@@ -98,5 +132,39 @@ impl<T: TimeZone> TypeMapper<DateTime<T>, i64> for MillisecondsMapper {
 impl TypeMapper<NaiveDateTime, i64> for MillisecondsMapper {
     fn map(from: NaiveDateTime) -> i64 {
         from.and_utc().timestamp_millis()
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<Utc>> for MillisecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<Utc>, Self::Error> {
+        DateTime::from_timestamp_millis(from).ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<FixedOffset>> for MillisecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<FixedOffset>, Self::Error> {
+        DateTime::from_timestamp_millis(from)
+            .map(Into::into)
+            .ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, DateTime<Local>> for MillisecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<DateTime<Local>, Self::Error> {
+        DateTime::from_timestamp_millis(from)
+            .map(Into::into)
+            .ok_or_else(|| MapperError::new("Date out of range"))
+    }
+}
+impl TypeFallibleMapper<i64, NaiveDateTime> for MillisecondsMapper {
+    type Error = MapperError;
+
+    fn try_map(from: i64) -> Result<NaiveDateTime, Self::Error> {
+        DateTime::from_timestamp_millis(from)
+            .map(|d| d.naive_utc())
+            .ok_or_else(|| MapperError::new("Date out of range"))
     }
 }
