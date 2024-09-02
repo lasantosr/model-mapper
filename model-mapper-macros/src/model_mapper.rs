@@ -142,7 +142,7 @@ fn derive_struct_from(
         // every non-skipped field of self
         .filtering(|_ix, f| f.skip_for(from_ty).is_none())
         // every additional field explicitly set
-        .ignore_extra(derive.add.iter().map(|f| f.field.as_ref()))
+        .extra_fields(derive.add.iter().map(|f| f.field.as_ref()))
         // any other field ignored, if set
         .ignore_all_extra(derive.ignore_extra.is_present());
 
@@ -151,7 +151,7 @@ fn derive_struct_from(
         // every non-skipped field (as it's on the from)
         .filtering(|_ix, f| f.skip_for(from_ty).is_none())
         // skipped fields with the custom value provided
-        .include_default_with(
+        .extra_fields_with(
             struct_fields
                 .iter()
                 .filter_map(|f| f.skip_for(from_ty).map(|skip| (f, skip)))
@@ -312,24 +312,15 @@ fn derive_struct_into(
     let from_ty = ident;
     let into_ty = derive.path.as_ref();
 
-    // Self type has
-    let from_ty_fields_helper = FieldsHelper::new(struct_fields)
-        // every non-skipped field
-        .filtering(|_ix, f| f.skip_for(into_ty).is_none())
-        // and skipped fields ignored
-        .ignore_extra(
-            struct_fields
-                .iter()
-                .filter(|f| f.skip_for(into_ty).is_some())
-                .filter_map(|f| f.ident.as_ref()),
-        );
+    // Self type has every field (whether it's used or not)
+    let from_ty_fields_helper = FieldsHelper::new(struct_fields);
 
     // The other type has
     let into_ty_fields_helper = FieldsHelper::new(struct_fields)
         // every non-skipped field
         .filtering(|_ix, f| f.skip_for(into_ty).is_none())
         // every additional field explicitly set
-        .include_default_with(derive.add.iter().map(|i| {
+        .extra_fields_with(derive.add.iter().map(|i| {
             let field = i.field.as_ref();
             (
                 field,
@@ -522,7 +513,7 @@ fn derive_enum_from(
                 // every none-skipped field of self variant
                 .filtering(|_ix, f| f.skip_for(from_ty).is_none())
                 // ignoring every additional field explicitly set
-                .ignore_extra(v
+                .extra_fields(v
                     .additional_for(from_ty)
                     .map(|i| i.iter().map(|i| i.field.as_ref()).collect::<Vec<_>>())
                     .unwrap_or_default())
@@ -551,7 +542,7 @@ fn derive_enum_from(
                 // every non-skipped field (as it's on the from)
                 .filtering(|_ix, f| f.skip_for(from_ty).is_none())
                 // skipped fields with the custom value provided
-                .include_default_with(
+                .extra_fields_with(
                     v.fields
                         .iter()
                         .filter_map(|f| f.skip_for(from_ty).map(|skip| (f, skip)))
@@ -737,17 +728,8 @@ fn derive_enum_into(
         // the left side of the match will be the from variant, along with its fields (if any)
         .left_collector(|v, fields| {
             let ident = &v.ident;
-            // Self variant has
+            // Self variant has every field (whether it's used or not)
             let from_fields = fields
-                // every non-skipped field
-                .filtering(|_ix, f| f.skip_for(into_ty).is_none())
-                // and skipped fields ignored
-                .ignore_extra(
-                    v.fields
-                        .iter()
-                        .filter(|f| f.skip_for(into_ty).is_some())
-                        .filter_map(|f| f.ident.as_ref()),
-                )
                 // collecting as the field ident
                 .right_collector(FieldsCollector::ident)
                 .collect();
@@ -767,7 +749,7 @@ fn derive_enum_into(
                 // every non-skipped field
                 .filtering(|_ix, f| f.skip_for(into_ty).is_none())
                 // every additional field explicitly set
-                .include_default_with(
+                .extra_fields_with(
                     v.additional_for(into_ty)
                         .map(|i| {
                             i.iter()
