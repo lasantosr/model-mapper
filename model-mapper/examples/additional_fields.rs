@@ -12,13 +12,16 @@ struct Foo {
 
 // Additional fields doesn't affect from derives, they're just ignored
 #[derive(Debug, PartialEq, Eq, Mapper)]
-#[mapper(from, ty = Foo, add(field = field3), add(field = field4))]
+#[mapper(from(custom), ty = Foo, add(field = field3), add(field = field4))]
 struct Bar1 {
     field1: String,
     field2: i64,
     // But we can use them on other skipped fields
     #[mapper(skip(default(value = field3 * 2)))]
     field5: i64,
+    // And we must be careful if there's some field with the same
+    #[mapper(rename = new_field3, skip)]
+    field3: Option<i64>,
 }
 
 // For into derives
@@ -49,6 +52,9 @@ struct Bar2 {
 struct Bar3 {
     field1: String,
     field2: i64,
+    // But be careful if the type already has another field with the same name that shall not be used
+    #[mapper(rename = ignore, skip)]
+    field3: Option<i64>,
 }
 
 #[derive(Mapper)]
@@ -100,8 +106,9 @@ fn main() {
         field1: "val".into(),
         field2: 2,
         field5: 2,
+        field3: Some(7),
     };
-    let mapped = expected.clone().into();
+    let mapped = Bar1::from_foo(expected.clone(), Some(7));
     assert_eq!(bar, mapped);
 
     let bar = Bar2 {
@@ -115,6 +122,7 @@ fn main() {
     let bar = Bar3 {
         field1: "val".into(),
         field2: 2,
+        field3: None,
     };
     let mapped = bar.into_foo_custom(1, None);
     assert_eq!(expected, mapped);

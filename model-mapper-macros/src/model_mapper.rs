@@ -170,8 +170,15 @@ fn derive_struct_from(
                                         .map(|e| e.value)
                                         .unwrap_or_else(|| parse_quote!(Default::default()))
                                 )
-                                // or just the field ident, as it will be provided on the function parameters
-                                .unwrap_or_else(|| parse_quote!(#field)),
+                                // or just the field ident (renamed), as it will be provided on the function parameters
+                                .unwrap_or_else(|| {
+                                    let ident = if let Some(rename) = f.rename_for(from_ty)  {
+                                        rename
+                                    } else {
+                                        field
+                                    };
+                                    parse_quote!(#ident)
+                                }),
                         )
                     })
                 }),
@@ -220,7 +227,14 @@ fn derive_struct_from(
             })
             .filter_map(|f| {
                 let ty = &f.ty;
-                f.ident.as_ref().map(|i| quote!(#i: #ty))
+                f.ident.as_ref().map(|i| {
+                    let ident = if let Some(rename) = f.rename_for(from_ty) {
+                        rename
+                    } else {
+                        i
+                    };
+                    quote!(#ident: #ty)
+                })
             })
             .collect::<Vec<_>>();
 
@@ -342,7 +356,16 @@ fn derive_struct_into(
         .include_all_default(derive.ignore_extra.is_present());
 
     // Deconstruct the `from` input to retrieve the inner fields
-    let deconstructed_from = from_ty_fields_helper.right_collector(FieldsCollector::ident).collect();
+    let deconstructed_from = from_ty_fields_helper
+        .right_collector(|ix, f| {
+            let ident = if let Some(rename) = f.rename_for(into_ty) {
+                rename.clone()
+            } else {
+                f.as_ident(ix)
+            };
+            quote!(#ident)
+        })
+        .collect();
 
     // Produce `into` body using the `with`
     let into_body = into_ty_fields_helper
@@ -355,7 +378,11 @@ fn derive_struct_into(
             quote!(#ident)
         })
         .right_collector(|ix, f| {
-            let ident = f.as_ident(ix);
+            let ident = if let Some(rename) = f.rename_for(into_ty) {
+                rename.clone()
+            } else {
+                f.as_ident(ix)
+            };
             if is_try {
                 if let Some(try_with) = f.with_into_for(into_ty) {
                     quote!(#try_with(#ident)?)
@@ -562,7 +589,12 @@ fn derive_enum_from(
                                             .unwrap_or_else(|| parse_quote!(Default::default())))
                                         // or just the field ident, as it will be provided on the function parameters
                                         .unwrap_or_else(|| {
-                                            let field_provider = format_ident!("{field}_provider");
+                                            let ident = if let Some(rename) = f.rename_for(from_ty)  {
+                                                rename
+                                            } else {
+                                                field
+                                            };
+                                            let field_provider = format_ident!("{ident}_provider");
                                             parse_quote!(#field_provider())
                                         }),
                                 )
@@ -604,7 +636,12 @@ fn derive_enum_from(
             .filter_map(|f| {
                 let ty = &f.ty;
                 f.ident.as_ref().map(|i| {
-                    let field_provider = format_ident!("{i}_provider");
+                    let ident = if let Some(rename) = f.rename_for(from_ty) {
+                        rename
+                    } else {
+                        i
+                    };
+                    let field_provider = format_ident!("{ident}_provider");
                     quote!(#field_provider: impl FnOnce() -> #ty)
                 })
             })
@@ -730,8 +767,15 @@ fn derive_enum_into(
             let ident = &v.ident;
             // Self variant has every field (whether it's used or not)
             let from_fields = fields
-                // collecting as the field ident
-                .right_collector(FieldsCollector::ident)
+                // collecting as the field ident (renamed)
+                .right_collector(|ix, f| {
+                    let ident = if let Some(rename) = f.rename_for(into_ty) {
+                        rename.clone()
+                    } else {
+                        f.as_ident(ix)
+                    };
+                    quote!(#ident)
+                })
                 .collect();
 
             quote!( #from_ty::#ident #from_fields )
@@ -789,7 +833,11 @@ fn derive_enum_into(
                 })
                 // using the `with`
                 .right_collector(|ix, f| {
-                    let ident = f.as_ident(ix);
+                    let ident = if let Some(rename) = f.rename_for(into_ty) {
+                        rename.clone()
+                    } else {
+                        f.as_ident(ix)
+                    };
                     if is_try {
                         if let Some(try_with) = f.with_into_for(into_ty) {
                             quote!(#try_with(#ident)?)

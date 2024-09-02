@@ -36,7 +36,7 @@ struct Bar2 {
 
 // We can also implement a custom function that will require the additional fields at runtime
 #[derive(Debug, PartialEq, Eq, Mapper)]
-#[mapper(from(custom = "custom_from_foo"), ty = Foo)]
+#[mapper(from(custom = "from_foo_custom"), ty = Foo)]
 struct Bar3 {
     field1: String,
     field2: i64,
@@ -97,7 +97,7 @@ fn main() {
         mapped
     );
 
-    let mapped = Bar3::custom_from_foo(source.clone(), 1, None);
+    let mapped = Bar3::from_foo_custom(source.clone(), 1, None);
     assert_eq!(
         Bar3 {
             field1: "val".into(),
