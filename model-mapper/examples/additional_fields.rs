@@ -10,7 +10,7 @@ struct Foo {
     field4: Option<String>,
 }
 
-// Additional fields doesn't affect from derives, they're just ignored
+// Additional fields doesn't affect 'from' derives, they're just ignored
 #[derive(Debug, PartialEq, Eq, Mapper)]
 #[mapper(from(custom), ty = Foo, add(field = field3), add(field = field4))]
 struct Bar1 {
@@ -19,12 +19,12 @@ struct Bar1 {
     // But we can use them on other skipped fields
     #[mapper(skip(default(value = field3 * 2)))]
     field5: i64,
-    // And we must be careful if there's some field with the same
+    // And we must be careful if there's some field with the same name
     #[mapper(rename = new_field3, skip)]
     field3: Option<i64>,
 }
 
-// For into derives
+// For 'into' derives
 #[derive(Mapper)]
 #[mapper(
     into,
@@ -77,8 +77,8 @@ enum FooEnum {
     Four,
 }
 
-// For enums, the into doesn't require anything but the from requires to provide default values or to implement the
-// default trait
+// For enums, the 'into' derive doesn't require anything but the 'from' requires to provide default values or to
+// implement the default trait
 #[derive(Default, Mapper)]
 #[mapper(
     from,

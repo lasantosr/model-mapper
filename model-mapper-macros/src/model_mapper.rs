@@ -6,7 +6,7 @@ use darling::{
 use heck::ToSnakeCase;
 use macro_field_utils::{FieldInfo, FieldsCollector, FieldsHelper, VariantsHelper};
 use proc_macro2::TokenStream;
-use proc_macro_error::abort_if_dirty;
+use proc_macro_error2::abort_if_dirty;
 use quote::{format_ident, quote, ToTokens};
 use syn::parse_quote;
 
@@ -201,17 +201,7 @@ fn derive_struct_from(
     let into_body = into_ty_fields_helper
         .right_collector(|ix, f| {
             let ident = f.as_ident(ix);
-            if is_try {
-                if let Some(try_with) = f.with_from_for(from_ty) {
-                    quote!(#try_with(#ident)?)
-                } else {
-                    quote!(TryInto::try_into(#ident)?)
-                }
-            } else if let Some(with) = f.with_from_for(from_ty) {
-                quote!(#with(#ident))
-            } else {
-                quote!(Into::into(#ident))
-            }
+            f.build_into_for(true, is_try, &ident, from_ty)
         })
         .collect();
 
@@ -383,17 +373,7 @@ fn derive_struct_into(
             } else {
                 f.as_ident(ix)
             };
-            if is_try {
-                if let Some(try_with) = f.with_into_for(into_ty) {
-                    quote!(#try_with(#ident)?)
-                } else {
-                    quote!(TryInto::try_into(#ident)?)
-                }
-            } else if let Some(with) = f.with_into_for(into_ty) {
-                quote!(#with(#ident))
-            } else {
-                quote!(Into::into(#ident))
-            }
+            f.build_into_for(false, is_try, &ident, into_ty)
         })
         .collect();
 
@@ -604,17 +584,7 @@ fn derive_enum_from(
                 // collecting the fields using the `with`
                 .right_collector(|ix, f| {
                     let ident = f.as_ident(ix);
-                    if is_try {
-                        if let Some(try_with) = f.with_from_for(from_ty) {
-                            quote!(#try_with(#ident)?)
-                        } else {
-                            quote!(TryInto::try_into(#ident)?)
-                        }
-                    } else if let Some(with) = f.with_from_for(from_ty) {
-                        quote!(#with(#ident))
-                    } else {
-                        quote!(Into::into(#ident))
-                    }
+                    f.build_into_for(true, is_try, &ident, from_ty)
                 })
                 .collect();
 
@@ -838,17 +808,7 @@ fn derive_enum_into(
                     } else {
                         f.as_ident(ix)
                     };
-                    if is_try {
-                        if let Some(try_with) = f.with_into_for(into_ty) {
-                            quote!(#try_with(#ident)?)
-                        } else {
-                            quote!(TryInto::try_into(#ident)?)
-                        }
-                    } else if let Some(with) = f.with_into_for(into_ty) {
-                        quote!(#with(#ident))
-                    } else {
-                        quote!(Into::into(#ident))
-                    }
+                    f.build_into_for(false, is_try, &ident, into_ty)
                 })
                 .collect();
 

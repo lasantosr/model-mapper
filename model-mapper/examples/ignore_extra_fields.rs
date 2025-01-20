@@ -5,7 +5,6 @@ use model_mapper::Mapper;
 mod ignore_extra_into {
     use super::*;
 
-    /// The [Default] trait is required to be implemented when deriving into other struct
     #[derive(Default)]
     struct Foo {
         field1: String,
@@ -14,6 +13,8 @@ mod ignore_extra_into {
         field4: Option<String>,
     }
 
+    /// When deriving 'into' for structs the [Default] trait is required on the target type,
+    /// in order to populate missing fields
     #[derive(Mapper)]
     #[mapper(into, ty = Foo, ignore_extra)]
     struct Bar {
@@ -40,7 +41,6 @@ mod ignore_extra_into {
 mod ignore_extra_from {
     use super::*;
 
-    /// The [Default] is not required when deriving from a struct
     struct Foo {
         field1: String,
         field2: i64,
@@ -48,6 +48,7 @@ mod ignore_extra_from {
         field4: Option<String>,
     }
 
+    /// When deriving 'from' for structs the [Default] trait is not required on the target type
     #[derive(Mapper)]
     #[mapper(from, ty = Foo, ignore_extra)]
     struct Bar {
@@ -62,7 +63,7 @@ mod ignore_extra_from {
         Four,
     }
 
-    /// But it's required to be present on the enum when deriving from it
+    /// But it's required on the source enum, in order to route missing variants
     #[derive(Mapper, Default)]
     #[mapper(from, ty = FooEnum, ignore_extra)]
     enum BarEnum {
@@ -75,8 +76,6 @@ mod ignore_extra_from {
 mod ignore_extra_explicit {
     use super::*;
 
-    /// The [Default] is not required if the additional fields are explicitly set.
-    /// For example if [Foo] resides in other crate and we can't modify it
     struct Foo {
         field1: String,
         field2: i64,
@@ -84,11 +83,15 @@ mod ignore_extra_explicit {
         field4: Option<String>,
     }
 
+    /// The [Default] is not required for the target struct if the additional fields are explicitly set.
+    /// For example if [Foo] resides in other crate and we can't modify it
     #[derive(Mapper)]
     #[mapper(
         into, from,
         ty = Foo,
-        add(field = field3, default),
+        // By providing an explicit value
+        add(field = field3, default(value = Some(1))),
+        // Or explicitly setting to the default (if the field's type implements it)
         add(field = field4, default)
     )]
     struct Bar {

@@ -5,7 +5,10 @@ use darling::{
     util::{Flag, Override, SpannedValue},
     FromDeriveInput, FromField, FromMeta, FromVariant,
 };
-use proc_macro_error::{abort_call_site, emit_error};
+use proc_macro2::{Span, TokenStream};
+use proc_macro_error2::{abort_call_site, emit_error};
+use quote::quote;
+use syn::spanned::Spanned;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(mapper), supports(struct_named, struct_newtype, struct_tuple, enum_any))]
@@ -140,15 +143,9 @@ pub(super) struct FieldReceiver {
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
-    /// To use some function to map the values
-    #[darling(default)]
-    with: Option<SpannedValue<syn::Path>>,
-    /// To use some function to map the values
-    #[darling(default)]
-    into_with: Option<SpannedValue<syn::Path>>,
-    /// To use some function to map the values
-    #[darling(default)]
-    from_with: Option<SpannedValue<syn::Path>>,
+    /// Mapper hints
+    #[darling(flatten)]
+    hint: MapperHint,
 }
 macro_field_utils::field_info!(FieldReceiver);
 
@@ -163,15 +160,31 @@ struct ItemFieldInput {
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
+    /// Mapper hints
+    #[darling(flatten)]
+    hint: MapperHint,
+}
+
+#[derive(Debug, FromMeta, Clone)]
+pub(super) struct MapperHint {
     /// To use some function to map the values
     #[darling(default)]
-    with: Option<SpannedValue<syn::Path>>,
+    with: Option<SpannedValue<syn::Expr>>,
     /// To use some function to map the values
     #[darling(default)]
-    into_with: Option<SpannedValue<syn::Path>>,
+    into_with: Option<SpannedValue<syn::Expr>>,
     /// To use some function to map the values
     #[darling(default)]
-    from_with: Option<SpannedValue<syn::Path>>,
+    from_with: Option<SpannedValue<syn::Expr>>,
+    /// Whether the field is an option
+    #[darling(default)]
+    opt: Option<SpannedValue<Override<Box<MapperHint>>>>,
+    /// Wether the field is an iterator
+    #[darling(default)]
+    iter: Option<SpannedValue<Override<Box<MapperHint>>>>,
+    /// Wether the field is a HashMap-like iter
+    #[darling(default)]
+    map: Option<SpannedValue<Override<Box<MapperHint>>>>,
 }
 
 #[derive(Debug, FromMeta, Clone)]
@@ -528,7 +541,7 @@ impl VariantReceiver {
 }
 
 impl ItemFieldInput {
-    fn validate(&self, derives: &[ItemInput]) {
+    fn validate(&self, span: Span, derives: &[ItemInput]) {
         let derive = derives.iter().find(|d| d.path.as_ref() == self.path.as_ref());
         if let Some(derive) = derive {
             // If there are skipped fields without a default value
@@ -558,6 +571,29 @@ impl ItemFieldInput {
                     }
                 }
             }
+            // validate only one hint
+            let mut hint_count = 0;
+            if self.hint.with.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.from_with.is_some() || self.hint.into_with.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.opt.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.iter.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.map.is_some() {
+                hint_count += 1;
+            }
+            if hint_count > 1 {
+                emit_error!(
+                    span,
+                    "Only one of 'with', 'into_with'/'from_with', 'opt', 'iter' or 'map' can be set"
+                );
+            }
         } else {
             emit_error!(self.path.span(), "There is no derive defined for this type");
         }
@@ -576,14 +612,23 @@ impl FieldReceiver {
             if let Some(skip) = self.skip.as_ref() {
                 emit_error!(skip.span(), "Illegal attribute if 'when' is set")
             }
-            if let Some(with) = self.with.as_ref() {
+            if let Some(with) = self.hint.with.as_ref() {
                 emit_error!(with.span(), "Illegal attribute if 'when' is set")
             }
-            if let Some(into_with) = self.into_with.as_ref() {
+            if let Some(into_with) = self.hint.into_with.as_ref() {
                 emit_error!(into_with.span(), "Illegal attribute if 'when' is set")
             }
-            if let Some(from_with) = self.from_with.as_ref() {
+            if let Some(from_with) = self.hint.from_with.as_ref() {
                 emit_error!(from_with.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(opt) = self.hint.opt.as_ref() {
+                emit_error!(opt.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(iter) = self.hint.iter.as_ref() {
+                emit_error!(iter.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(map) = self.hint.map.as_ref() {
+                emit_error!(map.span(), "Illegal attribute if 'when' is set")
             }
             // Verify there same type is not duplicated
             let paths = self.items.iter().map(|i| &i.path).collect::<Vec<_>>();
@@ -595,32 +640,28 @@ impl FieldReceiver {
                 }
             }
         }
-
+        let span = self.ident.as_ref().map(|i| i.span()).unwrap_or_else(|| self.ty.span());
         if let Some(path) = &self.path {
             ItemFieldInput {
                 path: path.clone(),
                 rename: self.rename.clone(),
                 skip: self.skip.clone(),
-                with: self.with.clone(),
-                into_with: self.into_with.clone(),
-                from_with: self.from_with.clone(),
+                hint: self.hint.clone(),
             }
-            .validate(derives);
+            .validate(span, derives);
         } else {
             for d in derives {
                 ItemFieldInput {
                     path: d.path.clone(),
                     rename: self.rename.clone(),
                     skip: self.skip.clone(),
-                    with: self.with.clone(),
-                    into_with: self.into_with.clone(),
-                    from_with: self.from_with.clone(),
+                    hint: self.hint.clone(),
                 }
-                .validate(derives);
+                .validate(span, derives);
             }
         }
         for item in self.items.iter() {
-            item.validate(derives);
+            item.validate(span, derives);
         }
     }
 
@@ -658,37 +699,105 @@ impl FieldReceiver {
         }
     }
 
-    pub(super) fn with_into_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
+    fn hint_for(&self, derive_path: &syn::Path) -> Option<&MapperHint> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
-                return item.into_with.as_deref().or(item.with.as_deref());
+                return Some(&item.hint);
             }
         }
         if let Some(path) = &self.path {
             if path.as_ref() == derive_path {
-                self.into_with.as_deref().or(self.with.as_deref())
+                Some(&self.hint)
             } else {
                 None
             }
         } else {
-            self.into_with.as_deref().or(self.with.as_deref())
+            Some(&self.hint)
         }
     }
 
-    pub(super) fn with_from_for(&self, derive_path: &syn::Path) -> Option<&syn::Path> {
-        for item in &self.items {
-            if item.path.as_ref() == derive_path {
-                return item.from_with.as_deref().or(item.with.as_deref());
-            }
+    pub(super) fn build_into_for(
+        &self,
+        from: bool,
+        is_try: bool,
+        ident: &syn::Ident,
+        derive_path: &syn::Path,
+    ) -> TokenStream {
+        let into = build_into_for_inner(from, is_try, ident, self.hint_for(derive_path));
+        if is_try {
+            quote!(#into?)
+        } else {
+            into
         }
-        if let Some(path) = &self.path {
-            if path.as_ref() == derive_path {
-                self.from_with.as_deref().or(self.with.as_deref())
+    }
+}
+
+fn build_into_for_inner(from: bool, is_try: bool, ident: &syn::Ident, hint: Option<&MapperHint>) -> TokenStream {
+    if let Some(hint) = hint {
+        let check_with = |with: &Option<SpannedValue<syn::Expr>>| {
+            if let Some(with) = with {
+                let with = with.as_ref();
+                if let syn::Expr::Path(with_path) = with {
+                    Some(quote!(#with_path(#ident)))
+                } else {
+                    Some(quote!(#with))
+                }
             } else {
                 None
             }
-        } else {
-            self.from_with.as_deref().or(self.with.as_deref())
+        };
+
+        if from {
+            if let Some(t) = check_with(&hint.from_with) {
+                return t;
+            }
+        } else if let Some(t) = check_with(&hint.into_with) {
+            return t;
         }
+
+        if let Some(t) = check_with(&hint.with) {
+            return t;
+        } else if let Some(opt) = &hint.opt {
+            let inner;
+            if let Some(inner_hint) = opt.as_ref().as_ref().explicit() {
+                inner = build_into_for_inner(from, is_try, ident, Some(inner_hint));
+            } else {
+                inner = build_into_for_inner(from, is_try, ident, None);
+            }
+            if is_try {
+                return quote!(#ident.map(|#ident| #inner).transpose());
+            } else {
+                return quote!(#ident.map(|#ident| #inner));
+            }
+        } else if let Some(iter) = &hint.iter {
+            let inner;
+            if let Some(inner_hint) = iter.as_ref().as_ref().explicit() {
+                inner = build_into_for_inner(from, is_try, ident, Some(inner_hint));
+            } else {
+                inner = build_into_for_inner(from, is_try, ident, None);
+            }
+            if is_try {
+                return quote!(#ident.into_iter().map(|#ident| #inner).collect::<std::result::Result<_, _>>());
+            } else {
+                return quote!(#ident.into_iter().map(|#ident| #inner).collect());
+            }
+        } else if let Some(map) = &hint.map {
+            let inner;
+            if let Some(inner_hint) = map.as_ref().as_ref().explicit() {
+                inner = build_into_for_inner(from, is_try, ident, Some(inner_hint));
+            } else {
+                inner = build_into_for_inner(from, is_try, ident, None);
+            }
+            if is_try {
+                return quote!(#ident.into_iter().map(|(k, #ident)| #inner.map(|v| (k, v))).collect::<std::result::Result<_, _>>());
+            } else {
+                return quote!(#ident.into_iter().map(|(k, #ident)| (k, #inner)).collect());
+            }
+        }
+    }
+    if is_try {
+        quote!(TryInto::try_into(#ident))
+    } else {
+        quote!(Into::into(#ident))
     }
 }

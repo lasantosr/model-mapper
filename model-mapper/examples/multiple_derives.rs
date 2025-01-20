@@ -8,6 +8,7 @@ struct StructA {
     tag: String,
 }
 
+// We can include multiple derives for different structs
 #[derive(Mapper)]
 #[mapper(derive(from, ty = StructA))]
 #[mapper(derive(into, ty = StructC))]

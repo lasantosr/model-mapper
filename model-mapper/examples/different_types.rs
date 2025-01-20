@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use model_mapper::{with::*, Mapper};
+use model_mapper::Mapper;
 
-mod fallible_conversion {
+mod using_with {
+
     use super::*;
 
     struct Foo {
@@ -13,13 +14,28 @@ mod fallible_conversion {
     }
 
     #[derive(Mapper)]
-    #[mapper(try_from, into, ty = Foo)]
+    #[mapper(into, ty = Foo)]
     struct Bar {
-        /// This field needs a mapping function to convert between [String] and [i32]
-        #[mapper(from_with = TryFromStringMapper::try_map, into_with = ToStringMapper::map)]
+        /// This field needs a mapping function to convert between [String] and [i32].
+        /// We can specify a function to map between the types
+        #[mapper(with = field1.to_string())]
+        field1: i32,
+        field2: i32,
+    }
+
+    #[derive(Mapper)]
+    #[mapper(try_from, into, ty = Foo)]
+    struct Bar2 {
+        /// Or if we're deriving both 'from' and 'into', we can provide functions for both of them.
+        /// We can specify a path to a function receiving the field, or provide an expression using any field
+        #[mapper(from_with = parse_field_1, into_with = format!("{},{}", field1, field2))]
         field1: i32,
         /// This field doesn't because [i32] implements [TryFrom<i64>]
         field2: i32,
+    }
+
+    fn parse_field_1(value: String) -> Result<i32, std::num::ParseIntError> {
+        value.split(',').next().unwrap().parse()
     }
 }
 
@@ -28,120 +44,41 @@ mod wrapped_types {
     use super::*;
 
     struct Foo {
-        field1: String,
-        field2: Vec<i32>,
+        field1: Option<i32>,
+        field2: VecDeque<i32>,
         field3: HashMap<String, i32>,
         field4: Vec<Option<i32>>,
+        field5: Option<Vec<Option<i32>>>,
+        field6: Option<HashMap<String, Option<Vec<i32>>>>,
+        field7: Option<Vec<i32>>,
     }
 
     #[derive(Mapper)]
     #[mapper(from, ty = Foo)]
     struct Bar {
-        field1: String,
-        /// [i64] implements [From<i34>], but the vec doesn't so we need a helper function
-        #[mapper(with = IntoMapper::map_wrapped)]
-        field2: Vec<i64>,
-        /// the same helper works with other types like [HashMap] and [Option]
-        #[mapper(with = IntoMapper::map_wrapped)]
+        /// [i64] implements [From<i34>], but [Option<i64>] doesn't implement [From<Option<i34>>]
+        /// we need to give some hint to the macro
+        #[mapper(opt)]
+        field1: Option<i64>,
+        /// there are more hints like for iterators, that works with any [IntoIterator] and [FromIterator] combination
+        #[mapper(iter)]
+        field2: HashSet<i64>,
+        /// or for [HashMap], which are just iterators of 2-element tuples
+        #[mapper(map)]
         field3: HashMap<String, i64>,
-        /// and we can even map nested wrappers
-        #[mapper(with = IntoMapper::map_nested_wrapped)]
+        /// and they can be nested
+        #[mapper(iter(opt))]
         field4: Vec<Option<i64>>,
-    }
-}
-
-mod remove_option {
-    use super::*;
-
-    struct Foo {
-        field1: String,
-        field2: i64,
-    }
-
-    #[derive(Mapper)]
-    #[mapper(from, try_into, ty = Foo)]
-    struct Bar {
-        /// This field needs a mapping function to try to remove the [Option], failing if [None]
-        #[mapper(into_with = IntoMapper::try_map_removing_option)]
-        field1: Option<String>,
-        field2: i64,
-    }
-}
-
-mod serde_types {
-    use super::*;
-
-    #[derive(serde::Serialize)]
-    struct FooProps {
-        prop1: String,
-        prop2: bool,
-    }
-
-    struct Foo {
-        field1: String,
-        field2: FooProps,
-        field3: FooProps,
-    }
-
-    #[derive(serde::Deserialize)]
-    struct BarProps {
-        prop1: String,
-        prop2: bool,
-    }
-
-    #[derive(Mapper)]
-    #[mapper(try_from, ty = Foo)]
-    struct Bar {
-        field1: String,
-        /// We can map between [serde] types
-        #[mapper(with = with_serde::Mapper::try_map)]
-        field2: BarProps,
-        /// Or directly to [serde_json::Value]
-        #[mapper(with = with_serde::ToJsonMapper::try_map)]
-        field3: serde_json::Value,
-    }
-}
-
-mod custom_mapper {
-    use super::*;
-
-    struct Foo {
-        full_name: String,
-        age: i64,
-    }
-
-    struct Name {
-        first_name: String,
-        last_name: Option<String>,
-    }
-
-    #[derive(Mapper)]
-    #[mapper(from, into, ty = Foo)]
-    struct Bar {
-        // This field needs a custom mapping function
-        #[mapper(rename = full_name, from_with = parse_name, into_with = split_name)]
-        name: Name,
-        age: i64,
-    }
-
-    fn parse_name(full_name: String) -> Name {
-        full_name
-            .split_once(' ')
-            .map(|(first_name, last_name)| Name {
-                first_name: first_name.into(),
-                last_name: Some(last_name.into()),
-            })
-            .unwrap_or_else(|| Name {
-                first_name: full_name,
-                last_name: None,
-            })
-    }
-
-    fn split_name(name: Name) -> String {
-        match name.last_name {
-            Some(last_name) => format!("{} {}", name.first_name, last_name),
-            None => name.first_name,
-        }
+        /// at any level
+        #[mapper(opt(iter(opt)))]
+        field5: Option<Vec<Option<i64>>>,
+        /// mixing any of them
+        #[mapper(opt(map(opt(iter))))]
+        field6: Option<HashMap<String, Option<Vec<i64>>>>,
+        /// or even with custom functions
+        /// the field will contain the inner field, on this case the [i32], not the outer [Option]
+        #[mapper(opt(iter(with = field7.to_string())))]
+        field7: Option<Vec<String>>,
     }
 }
 

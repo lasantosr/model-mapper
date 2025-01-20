@@ -8,7 +8,7 @@ struct Foo {
     field2: i64,
 }
 
-// Skipped fields doesn't affect into derives, they're just ignored
+// Skipped fields doesn't affect 'into' derives, they're just ignored
 #[derive(Debug, PartialEq, Eq, Mapper)]
 #[mapper(into, ty = Foo)]
 struct Bar1 {
@@ -20,13 +20,13 @@ struct Bar1 {
     field4: Option<String>,
 }
 
-// For from derives
+// But for 'from' derives we need a way of populating its value
 #[derive(Debug, PartialEq, Eq, Mapper)]
 #[mapper(from, ty = Foo)]
 struct Bar2 {
     field1: String,
     field2: i64,
-    // We can populate fields using other values
+    // Using other values
     #[mapper(skip(default(value = field2 / 2)))]
     field3: i64,
     // Or just with the default, None in this case
@@ -34,7 +34,7 @@ struct Bar2 {
     field4: Option<String>,
 }
 
-// We can also implement a custom function that will require the additional fields at runtime
+// We can also implement a custom function instead, that will require the additional fields at runtime:
 #[derive(Debug, PartialEq, Eq, Mapper)]
 #[mapper(from(custom = "from_foo_custom"), ty = Foo)]
 struct Bar3 {
@@ -45,6 +45,12 @@ struct Bar3 {
     #[mapper(skip)]
     field4: Option<String>,
 }
+// impl Bar3 {
+//     pub fn from_foo_custom(from: Foo, field3: i64, field4: Option<String>) -> Self {
+//         let Foo { field1, field2 } = from;
+//         Self { field1, field2, field3, field4 }
+//     }
+// }
 
 // Or even mix both options
 #[derive(Debug, PartialEq, Eq, Mapper)]
@@ -57,6 +63,17 @@ struct Bar4 {
     #[mapper(skip)]
     field4: Option<String>,
 }
+// impl Bar4 {
+//     pub fn from_foo(from: Foo, field4: Option<String>) -> Self {
+//         let Foo { field1, field2 } = from;
+//         Self {
+//             field1,
+//             field2,
+//             field3: field2 / 2,
+//             field4,
+//         }
+//     }
+// }
 
 #[derive(Default)]
 enum FooEnum {
@@ -65,8 +82,8 @@ enum FooEnum {
     Two,
 }
 
-// For enums, the from doesn't require anything but the into requires to provide default values or to implement the
-// default trait
+// For enums, the 'from' derive doesn't require anything but the 'into' requires to provide default values or to
+// implement the default trait
 #[derive(Mapper)]
 #[mapper(into, ty = FooEnum)]
 enum BarEnum {
@@ -79,6 +96,16 @@ enum BarEnum {
     #[mapper(skip(default))]
     Four,
 }
+// impl From<BarEnum> for FooEnum {
+//     fn from(other: BarEnum) -> Self {
+//         match other {
+//             BarEnum::One => FooEnum::One,
+//             BarEnum::Two => FooEnum::Two,
+//             BarEnum::Three => FooEnum::Two,
+//             BarEnum::Four => FooEnum::default(),
+//         }
+//     }
+// }
 
 fn main() {
     let source = Foo {

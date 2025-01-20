@@ -2,7 +2,7 @@ mod input;
 mod model_mapper;
 
 use proc_macro::TokenStream;
-use proc_macro_error::proc_macro_error;
+use proc_macro_error2::proc_macro_error;
 
 /// Derive mapper functions to convert between types.
 ///
@@ -26,20 +26,20 @@ use proc_macro_error::proc_macro_error;
 ///   - `custom` _(optional)_: Derive a custom function instead of the trait
 ///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
 /// - `add` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the other
-///   type has and this one doesn't **&#x00b9;**
+///   type has and this one doesn't **&#xb9;**
 ///   - `field = other_field` _(mandatory)_: The field or variant name
 ///   - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
 ///   - `default` _(optional)_: The field or variant will be populated using `Default::default()` (mandatory for enums,
 ///     with or without value)
 ///     - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
 /// - `ignore_extra` _(optional)_: Whether to ignore all extra fields (for structs) or variants (for enums) of the other
-///   type **&#x00b2;**
+///   type **&#xb2;**
 ///
 /// #### Variant level attributes
 ///
 /// - `rename = OtherVariant` _(optional)_: To rename this variant on the other enum
 /// - `add` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
-///   doesn't **&#x00b9;**
+///   doesn't **&#xb9;**
 ///   - `field = other_field` _(mandatory)_: The field name
 ///   - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
 ///   - `default` _(optional)_: The field or variant will be populated using `Default::default()`
@@ -49,7 +49,7 @@ use proc_macro_error::proc_macro_error;
 ///     - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression
 ///       instead
 /// - `ignore_extra` _(optional)_: Whether to ignore all extra fields of the other variant (only valid for _from_ and
-///   _try_from_) **&#x00b2;**
+///   _try_from_) **&#xb2;**
 ///
 /// #### Field level attributes
 ///
@@ -58,16 +58,24 @@ use proc_macro_error::proc_macro_error;
 ///   - `default` _(optional)_: The field or variant will be populated using `Default::default()`
 ///     - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression
 ///       instead
+///
+/// Additional hints on how to map fields:
+///
+/// - `opt` _(optional)_: The field is an `Option` and the inner value shall be mapped **&#xb3;**
+/// - `iter` _(optional)_: The field is an iterator and the inner value shall be mapped **&#xb3;**
+/// - `map` _(optional)_: The field is a hashmap-like iterator and the inner value shall be mapped **&#xb3;**
 /// - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
 ///   property allows you to customize the behavior by providing a conversion function
-/// - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` or `try_into` derives
+/// - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives
 /// - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives
 ///
-/// **&#x00b9;** When providing additional fields without defaults, the `From` and `TryFrom` traits can't be derived and
+/// **&#xb9;** When providing additional fields without defaults, the `From` and `TryFrom` traits can't be derived and
 /// a custom function will be required instead. When deriving `into` or `try_into`, the `ty` must be provided as well.
 ///
-/// **&#x00b2;** When ignoring fields or variants it might be required that the enum or the struct implements `Default`
+/// **&#xb2;** When ignoring fields or variants it might be required that the enum or the struct implements `Default`
 /// in order to properly populate it.
+///
+/// **&#xb3;** Hints can be nested, for example: `opt(vec)`, `vec(opt(with = "my_custom_fn"))`
 ///
 /// ## Example
 ///

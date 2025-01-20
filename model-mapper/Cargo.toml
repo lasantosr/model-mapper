@@ -9,35 +9,13 @@ repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
-default = ["with"]
+default = ["std"]
 
 # Requires a dependency on the Rust standard library
-std = []
-
-# Includes some utils for `with` feature
-with = ["std", "dep:anyhow"]
-
-# Includes mappers for chrono types
-chrono = ["with", "dep:chrono"]
-
-# Includes mappers for serde types
-serde = ["with", "dep:serde", "dep:serde_json"]
-
-[[example]]
-name = "different_types"
-required-features = ["chrono", "serde"]
+std = ["dep:anyhow"]
 
 [dependencies]
 model-mapper-macros = { workspace = true }
 
-anyhow     = { workspace = true, optional = true }
-chrono     = { workspace = true, optional = true }
-serde      = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
-
-[dev-dependencies]
-chrono = { workspace = true }
-serde  = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true, optional = true }

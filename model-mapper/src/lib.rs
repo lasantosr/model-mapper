@@ -1,8 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "with")]
-pub mod with;
-
 // Re-export derive macro crate
 #[allow(unused_imports)]
 #[macro_use]
