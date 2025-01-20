@@ -739,6 +739,8 @@ fn build_into_for_inner(from: bool, is_try: bool, ident: &syn::Ident, hint: Opti
                 let with = with.as_ref();
                 if let syn::Expr::Path(with_path) = with {
                     Some(quote!(#with_path(#ident)))
+                } else if is_try {
+                    Some(quote!(Ok::<_, anyhow::Error>(#with)))
                 } else {
                     Some(quote!(#with))
                 }

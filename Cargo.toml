@@ -3,7 +3,7 @@ members = ["model-mapper", "model-mapper-macros"]
 resolver = "2"
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 license = "Apache-2.0"
 readme = "README.md"
@@ -12,7 +12,7 @@ keywords = ["model", "mapper", "derive", "from", "into"]
 categories = ["development-tools", "rust-patterns", "no-std"]
 
 [workspace.dependencies]
-model-mapper-macros = { version = "=0.6.0", path = "./model-mapper-macros" }
+model-mapper-macros = { version = "=0.6.1", path = "./model-mapper-macros" }
 
 anyhow            = "1"
 chrono            = "0.4"
