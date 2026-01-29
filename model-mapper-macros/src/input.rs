@@ -6,6 +6,7 @@ use darling::{
     FromDeriveInput, FromField, FromMeta, FromVariant,
 };
 use proc_macro2::{Span, TokenStream};
+use proc_macro_crate::{crate_name, FoundCrate};
 use proc_macro_error2::{abort_call_site, emit_error};
 use quote::quote;
 use syn::spanned::Spanned;
@@ -738,7 +739,18 @@ fn build_into_for_inner(from: bool, is_try: bool, ident: &syn::Ident, hint: Opti
             if let Some(with) = with {
                 let with = with.as_ref();
                 if let syn::Expr::Path(with_path) = with {
-                    Some(quote!(#with_path(#ident)))
+                    let crate_name = match crate_name("model-mapper") {
+                        Ok(FoundCrate::Itself) => quote!(::model_mapper),
+                        Ok(FoundCrate::Name(name)) => {
+                            let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
+                            quote!(::#ident)
+                        }
+                        Err(_) => quote!(::model_mapper),
+                    };
+                    Some(quote!({
+                        use #crate_name::private::{RefMapper, ValueMapper};
+                        (&(#with_path)).map_value(#ident)
+                    }))
                 } else if is_try {
                     Some(quote!(Ok::<_, anyhow::Error>(#with)))
                 } else {

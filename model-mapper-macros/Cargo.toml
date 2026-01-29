@@ -17,6 +17,7 @@ proc-macro = true
 darling           = { workspace = true }
 heck              = { workspace = true }
 macro-field-utils = { workspace = true }
+proc-macro-crate  = { workspace = true }
 proc-macro-error2 = { workspace = true }
 proc-macro2       = { workspace = true }
 quote             = { workspace = true }
