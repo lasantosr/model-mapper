@@ -1,17 +1,26 @@
 # Model Mapper
 
-This library provides a macro to implement functions to convert between types (both enums and structs) without boilerplate.
+A powerful Rust macro to generate boilerplate-free declarations of `From`, `Into`, `TryFrom`, and `TryInto` traits for 
+converting between structs and enums.
 
-It also provides a `with` module containing some utilities to convert between types that does not implement `Into` trait.
+It is designed to handle common patterns like detailed DTOs to internal entities, handling optional fields, nested 
+collections, and even disparate generic types.
 
-As long as you don't use the `with` module (disable default features) and don't derive `try_into` or `try_form`, this
-lib can be used in `#![no_std]` crates.
+## Features
 
-## Examples
+- **Zero Boilerplate**: Automatically implements `From`, `Into`, `TryFrom`, and `TryInto`.
+- **Flexible Mapping**: Handle renamed fields, skipped fields, and additional fields.
+- **Custom Logic**: Inject custom conversion logic for specific fields using functions or expressions.
+- **Generics Support**: Seamless mapping between generic types with different parameters.
+- **Multiple Targets**: Map a single type to multiple other types with conditional configurations.
+- **Nested Mapping**: Built-in support for mapping inner values within Option, iterators, and maps.
+- **`no_std` compatible**: Works in `no_std` environments (with default features disabled).
 
-The most common use case for this crate is to map between domain entities on services and externally-faced models or DTOs.
+## Quick Start
 
-```rs
+The most common use case is mapping between domain entities and DTOs.
+
+```rust
 #[derive(Mapper)]
 #[mapper(from, ty = Entity)]
 pub struct Model {
@@ -22,7 +31,7 @@ pub struct Model {
 
 The macro expansion above would generate something like:
 
-```rs
+```rust
 impl From<Entity> for Model {
     fn from(Entity { id, name }: Entity) -> Self {
         Self {
@@ -36,7 +45,7 @@ impl From<Entity> for Model {
 Because types doesn't always fit like a glove, you can provide additional fields on runtime, at the cost of not being
 able to use the `From` trait:
 
-```rs
+```rust
 pub mod service {
     pub struct UpdateUserInput {
         pub user_id: i64,
@@ -59,7 +68,7 @@ pub struct UpdateProfileRequest {
 
 Would generate something like:
 
-```rs
+```rust
 impl UpdateProfileRequest {
     /// Builds a new [service::UpdateUserInput] from a [UpdateProfileRequest]
     pub fn into_update_user(self, user_id: i64) -> service::UpdateUserInput {
@@ -75,7 +84,7 @@ impl UpdateProfileRequest {
 
 Other advanced use cases are available on the [examples folder](./model-mapper/examples/).
 
-## Usage
+## Detailed Usage
 
 A `mapper` attribute is required at type-level and it's optional at field or variant level.
 
@@ -172,3 +181,7 @@ and must set the `ty` they refer to:
 #[mapper(when(ty = OtherType, with = TryIntoMapper::try_map_removing_option))]
 #[mapper(when(ty = YetAnotherType, skip(default)))]
 ```
+
+## License
+
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
