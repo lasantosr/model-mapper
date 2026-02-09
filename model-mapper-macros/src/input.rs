@@ -389,19 +389,18 @@ impl ItemVariantInput {
                 }
             }
             // If there are skipped variants without a default value
-            if let Some(skip) = self.skip.as_ref() {
-                if Override::as_ref(skip)
+            if let Some(skip) = self.skip.as_ref()
+                && Override::as_ref(skip)
                     .explicit()
                     .map(|e| e.default.is_none())
                     .unwrap_or(true)
-                {
-                    // into and try_into requires a default value
-                    if derive.into.is_some() || derive.try_into.is_some() {
-                        emit_error!(
-                            skip.span(),
-                            "Enable `default` here required for `into` and `try_into` derives"
-                        );
-                    }
+            {
+                // into and try_into requires a default value
+                if derive.into.is_some() || derive.try_into.is_some() {
+                    emit_error!(
+                        skip.span(),
+                        "Enable `default` here required for `into` and `try_into` derives"
+                    );
                 }
             }
         } else {
@@ -554,30 +553,29 @@ impl ItemFieldInput {
         let derive = derives.iter().find(|d| d.path.as_ref() == self.path.as_ref());
         if let Some(derive) = derive {
             // If there are skipped fields without a default value
-            if let Some(skip) = self.skip.as_ref() {
-                if Override::as_ref(skip)
+            if let Some(skip) = self.skip.as_ref()
+                && Override::as_ref(skip)
                     .explicit()
                     .map(|e| e.default.is_none())
                     .unwrap_or(true)
+            {
+                // from and try_from must have the custom flag if enabled
+                let mut missing_custom = false;
+                if let Some(from) = derive.from.as_deref()
+                    && from.as_ref().explicit().map(|e| e.custom.is_none()).unwrap_or(true)
                 {
-                    // from and try_from must have the custom flag if enabled
-                    let mut missing_custom = false;
-                    if let Some(from) = derive.from.as_deref() {
-                        if from.as_ref().explicit().map(|e| e.custom.is_none()).unwrap_or(true) {
-                            missing_custom = true;
-                        }
-                    }
-                    if let Some(try_from) = derive.try_from.as_deref() {
-                        if try_from.as_ref().explicit().map(|e| e.custom.is_none()).unwrap_or(true) {
-                            missing_custom = true;
-                        }
-                    }
-                    if missing_custom {
-                        emit_error!(
-                            skip.span(),
-                            "Enable `default` here or include `custom` on `from` and `try_from` derives"
-                        );
-                    }
+                    missing_custom = true;
+                }
+                if let Some(try_from) = derive.try_from.as_deref()
+                    && try_from.as_ref().explicit().map(|e| e.custom.is_none()).unwrap_or(true)
+                {
+                    missing_custom = true;
+                }
+                if missing_custom {
+                    emit_error!(
+                        skip.span(),
+                        "Enable `default` here or include `custom` on `from` and `try_from` derives"
+                    );
                 }
             }
             // validate only one hint
@@ -830,7 +828,9 @@ fn build_into_for_inner(from: bool, is_try: bool, ident: &syn::Ident, hint: Opti
                 inner = build_into_for_inner(from, is_try, ident, None);
             }
             if is_try {
-                return quote!(#ident.into_iter().map(|(k, #ident)| #inner.map(|v| (k, v))).collect::<std::result::Result<_, _>>());
+                return quote!(
+                    #ident.into_iter().map(|(k, #ident)| #inner.map(|v| (k, v))).collect::<std::result::Result<_, _>>()
+                );
             } else {
                 return quote!(#ident.into_iter().map(|(k, #ident)| (k, #inner)).collect());
             }

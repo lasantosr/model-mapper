@@ -93,12 +93,11 @@ impl<'a> Fold for TypePathReplacer<'a> {
             && i.path.leading_colon.is_none()
             && i.path.segments.len() == 1
             && i.path.segments[0].arguments.is_empty()
+            && let Some(new_ident) = self.map.get(&i.path.segments[0].ident)
         {
-            if let Some(new_ident) = self.map.get(&i.path.segments[0].ident) {
-                let mut new_path = i.clone();
-                new_path.path.segments[0].ident = new_ident.clone();
-                return new_path;
-            }
+            let mut new_path = i.clone();
+            new_path.path.segments[0].ident = new_ident.clone();
+            return new_path;
         }
         syn::fold::fold_type_path(self, i)
     }
