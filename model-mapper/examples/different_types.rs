@@ -56,7 +56,7 @@ mod wrapped_types {
     #[derive(Mapper)]
     #[mapper(from, ty = Foo)]
     struct Bar {
-        /// [i64] implements [From<i34>], but [Option<i64>] doesn't implement [From<Option<i34>>]
+        /// [i64] implements [From<i32>], but [Option<i64>] doesn't implement [From<Option<i32>>]
         /// we need to give some hint to the macro
         #[mapper(opt)]
         field1: Option<i64>,

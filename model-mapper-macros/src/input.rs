@@ -11,6 +11,8 @@ use proc_macro_error2::{abort_call_site, emit_error};
 use quote::quote;
 use syn::spanned::Spanned;
 
+use crate::type_path_ext::TypePathWrapper;
+
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(mapper), supports(struct_named, struct_newtype, struct_tuple, enum_any))]
 pub(super) struct MapperOpts {
@@ -26,7 +28,7 @@ pub(super) struct MapperOpts {
 
     /// Path of the struct or enum
     #[darling(default, rename = "ty")]
-    path: Option<SpannedValue<syn::Path>>,
+    path: Option<SpannedValue<TypePathWrapper>>,
     /// Whether to derive [From] the type to self
     #[darling(default)]
     from: Option<SpannedValue<Override<DeriveInput>>>,
@@ -51,7 +53,7 @@ pub(super) struct MapperOpts {
 pub(super) struct ItemInput {
     /// Path of the struct or enum
     #[darling(rename = "ty")]
-    pub(super) path: SpannedValue<syn::Path>,
+    pub(super) path: SpannedValue<TypePathWrapper>,
     /// Whether to derive [From] the type to self
     #[darling(default)]
     pub(super) from: Option<SpannedValue<Override<DeriveInput>>>,
@@ -87,7 +89,7 @@ pub(super) struct VariantReceiver {
 
     /// Path of the struct or enum to derive
     #[darling(default, rename = "ty")]
-    path: Option<SpannedValue<syn::Path>>,
+    path: Option<SpannedValue<TypePathWrapper>>,
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -107,7 +109,7 @@ macro_field_utils::variant_info!(VariantReceiver, FieldReceiver);
 struct ItemVariantInput {
     /// Path of the struct or enum to derive
     #[darling(rename = "ty")]
-    path: SpannedValue<syn::Path>,
+    path: SpannedValue<TypePathWrapper>,
     /// To rename the variant
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
@@ -137,13 +139,16 @@ pub(super) struct FieldReceiver {
 
     /// Path of the struct or enum to derive
     #[darling(default, rename = "ty")]
-    path: Option<SpannedValue<syn::Path>>,
+    path: Option<SpannedValue<TypePathWrapper>>,
     /// To rename the field
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
+    /// To use another source generic type for mapping
+    #[darling(default)]
+    other_ty: Option<SpannedValue<syn::Ident>>,
     /// Mapper hints
     #[darling(flatten)]
     hint: MapperHint,
@@ -154,13 +159,16 @@ macro_field_utils::field_info!(FieldReceiver);
 struct ItemFieldInput {
     /// Path of the struct or enum to derive
     #[darling(rename = "ty")]
-    path: SpannedValue<syn::Path>,
+    path: SpannedValue<TypePathWrapper>,
     /// To rename the field
     #[darling(default)]
     rename: Option<SpannedValue<syn::Ident>>,
     /// To skip this field when deriving (defaults to `false`)
     #[darling(default)]
     skip: Option<SpannedValue<Override<SkipInput>>>,
+    /// To use another source generic type for mapping
+    #[darling(default)]
+    other_ty: Option<SpannedValue<syn::Ident>>,
     /// Mapper hints
     #[darling(flatten)]
     hint: MapperHint,
@@ -201,7 +209,7 @@ pub(super) struct AddInput {
     pub(super) field: SpannedValue<syn::Ident>,
     /// Type of the field
     #[darling(default)]
-    pub(super) ty: Option<SpannedValue<syn::Path>>,
+    pub(super) ty: Option<SpannedValue<TypePathWrapper>>,
     /// Default value for the field
     #[darling(default)]
     pub(super) default: Option<SpannedValue<Override<DefaultInput>>>,
@@ -462,7 +470,7 @@ impl VariantReceiver {
         self.fields.iter().for_each(|f| f.validate(derives));
     }
 
-    pub(super) fn rename_for(&self, derive_path: &syn::Path) -> Option<&syn::Ident> {
+    pub(super) fn rename_for(&self, derive_path: &syn::TypePath) -> Option<&syn::Ident> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return item.rename.as_deref();
@@ -479,7 +487,7 @@ impl VariantReceiver {
         }
     }
 
-    pub(super) fn additional_for(&self, derive_path: &syn::Path) -> Option<&Vec<AddInput>> {
+    pub(super) fn additional_for(&self, derive_path: &syn::TypePath) -> Option<&Vec<AddInput>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 if item.add.is_empty() {
@@ -506,7 +514,7 @@ impl VariantReceiver {
         }
     }
 
-    pub(super) fn skip_for(&self, derive_path: &syn::Path) -> Option<&Override<SkipInput>> {
+    pub(super) fn skip_for(&self, derive_path: &syn::TypePath) -> Option<&Override<SkipInput>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return item.skip.as_deref();
@@ -523,7 +531,7 @@ impl VariantReceiver {
         }
     }
 
-    pub(super) fn ignore_extra_for(&self, derive_path: &syn::Path) -> bool {
+    pub(super) fn ignore_extra_for(&self, derive_path: &syn::TypePath) -> bool {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return item.ignore_extra.is_present();
@@ -647,6 +655,7 @@ impl FieldReceiver {
                 path: path.clone(),
                 rename: self.rename.clone(),
                 skip: self.skip.clone(),
+                other_ty: self.other_ty.clone(),
                 hint: self.hint.clone(),
             }
             .validate(span, derives);
@@ -656,6 +665,7 @@ impl FieldReceiver {
                     path: d.path.clone(),
                     rename: self.rename.clone(),
                     skip: self.skip.clone(),
+                    other_ty: self.other_ty.clone(),
                     hint: self.hint.clone(),
                 }
                 .validate(span, derives);
@@ -666,7 +676,7 @@ impl FieldReceiver {
         }
     }
 
-    pub(super) fn rename_for(&self, derive_path: &syn::Path) -> Option<&syn::Ident> {
+    pub(super) fn rename_for(&self, derive_path: &syn::TypePath) -> Option<&syn::Ident> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return item.rename.as_deref();
@@ -683,7 +693,7 @@ impl FieldReceiver {
         }
     }
 
-    pub(super) fn skip_for(&self, derive_path: &syn::Path) -> Option<&Override<SkipInput>> {
+    pub(super) fn skip_for(&self, derive_path: &syn::TypePath) -> Option<&Override<SkipInput>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return item.skip.as_deref();
@@ -700,7 +710,24 @@ impl FieldReceiver {
         }
     }
 
-    fn hint_for(&self, derive_path: &syn::Path) -> Option<&MapperHint> {
+    pub(super) fn other_ty_for(&self, derive_path: &syn::TypePath) -> Option<&syn::Ident> {
+        for item in &self.items {
+            if item.path.as_ref() == derive_path {
+                return item.other_ty.as_deref();
+            }
+        }
+        if let Some(path) = &self.path {
+            if path.as_ref() == derive_path {
+                self.other_ty.as_deref()
+            } else {
+                None
+            }
+        } else {
+            self.other_ty.as_deref()
+        }
+    }
+
+    fn hint_for(&self, derive_path: &syn::TypePath) -> Option<&MapperHint> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {
                 return Some(&item.hint);
@@ -722,7 +749,7 @@ impl FieldReceiver {
         from: bool,
         is_try: bool,
         ident: &syn::Ident,
-        derive_path: &syn::Path,
+        derive_path: &syn::TypePath,
     ) -> TokenStream {
         let into = build_into_for_inner(from, is_try, ident, self.hint_for(derive_path));
         if is_try {

@@ -1,5 +1,6 @@
 mod input;
 mod model_mapper;
+mod type_path_ext;
 
 use proc_macro::TokenStream;
 use proc_macro_error2::proc_macro_error;
@@ -12,7 +13,8 @@ use proc_macro_error2::proc_macro_error;
 ///
 /// #### Type level attributes
 ///
-/// - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
+/// - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion. Can be a string literal for complex
+///   types (e.g. `ty = "Type<T>"`)
 /// - `from` _(optional)_: Whether to derive `From` the other type for self
 ///   - `custom` _(optional)_: Derive a custom function instead of the trait
 ///   - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
@@ -54,6 +56,8 @@ use proc_macro_error2::proc_macro_error;
 /// #### Field level attributes
 ///
 /// - `rename = other_name` _(optional)_: To rename this field on the other type
+/// - `other_ty = T` _(optional)_: If the field type corresponds to a generic parameter of the source type, this
+///   attribute allows specifying which generic parameter it maps to.
 /// - `skip` _(optional)_: Whether to skip this field because the other type doesn't have it
 ///   - `default` _(optional)_: The field or variant will be populated using `Default::default()`
 ///     - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression
