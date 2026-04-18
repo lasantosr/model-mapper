@@ -1,9 +1,9 @@
 # Model Mapper
 
-A powerful Rust macro to generate boilerplate-free declarations of `From`, `Into`, `TryFrom`, and `TryInto` traits for 
+A powerful Rust macro to generate boilerplate-free declarations of `From`, `Into`, `TryFrom`, and `TryInto` traits for
 converting between structs and enums.
 
-It is designed to handle common patterns like detailed DTOs to internal entities, handling optional fields, nested 
+It is designed to handle common patterns like detailed DTOs to internal entities, handling optional fields, nested
 collections, and even disparate generic types.
 
 ## Features
@@ -146,6 +146,9 @@ The following attributes are available.
   - `opt` _(optional)_: The field is an `Option` and the inner value shall be mapped **&#xb3;**
   - `iter` _(optional)_: The field is an iterator and the inner value shall be mapped **&#xb3;**
   - `map` _(optional)_: The field is a hashmap-like iterator and the inner value shall be mapped **&#xb3;**
+  - `boxed` _(optional)_: The field is a `Box` and the inner value shall be mapped **&#xb3;**
+  - `box` _(optional)_: The other field is a `Box` while the current field is not **&#xb3;**
+  - `unbox` _(optional)_: The current field is a `Box` while the other field is not **&#xb3;**
   - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
     property allows you to customize the behavior by providing a conversion function
   - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives

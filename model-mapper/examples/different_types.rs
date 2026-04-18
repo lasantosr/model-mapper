@@ -44,41 +44,53 @@ mod wrapped_types {
     use super::*;
 
     struct Foo {
-        field1: Option<i32>,
-        field2: VecDeque<i32>,
-        field3: HashMap<String, i32>,
-        field4: Vec<Option<i32>>,
-        field5: Option<Vec<Option<i32>>>,
-        field6: Option<HashMap<String, Option<Vec<i32>>>>,
-        field7: Option<Vec<i32>>,
+        field1: Option<i64>,
+        field2: VecDeque<i64>,
+        field3: HashMap<String, i64>,
+        field4: Box<i64>,
+        field5: Box<i64>,
+        field6: i64,
+        field7: Vec<Option<i64>>,
+        field8: Option<Vec<Option<i64>>>,
+        field9: Option<HashMap<String, Option<Box<i64>>>>,
+        field10: Option<Vec<String>>,
     }
 
     #[derive(Mapper)]
-    #[mapper(from, ty = Foo)]
+    #[mapper(into, ty = Foo)]
     struct Bar {
-        /// [i64] implements [From<i32>], but [Option<i64>] doesn't implement [From<Option<i32>>]
+        /// [i32] implements [Into<i64>], but [Option<i32>] doesn't implement [Into<Option<i64>>]
         /// we need to give some hint to the macro
         #[mapper(opt)]
-        field1: Option<i64>,
+        field1: Option<i32>,
         /// there are more hints like for iterators, that works with any [IntoIterator] and [FromIterator] combination
         #[mapper(iter)]
-        field2: HashSet<i64>,
+        field2: HashSet<i32>,
         /// or for [HashMap], which are just iterators of 2-element tuples
         #[mapper(map)]
-        field3: HashMap<String, i64>,
+        field3: HashMap<String, i32>,
+        /// also for [Box]ed values
+        #[mapper(boxed)]
+        field4: Box<i32>,
+        /// even mapping to a boxed value allocating it on the heap
+        #[mapper(box)]
+        field5: i32,
+        /// or moving the value out of the heap
+        #[mapper(unbox)]
+        field6: Box<i32>,
         /// and they can be nested
         #[mapper(iter(opt))]
-        field4: Vec<Option<i64>>,
+        field7: Vec<Option<i32>>,
         /// at any level
         #[mapper(opt(iter(opt)))]
-        field5: Option<Vec<Option<i64>>>,
+        field8: Option<Vec<Option<i32>>>,
         /// mixing any of them
-        #[mapper(opt(map(opt(iter))))]
-        field6: Option<HashMap<String, Option<Vec<i64>>>>,
+        #[mapper(opt(map(opt(boxed))))]
+        field9: Option<HashMap<String, Option<Box<i32>>>>,
         /// or even with custom functions
-        /// the field will contain the inner field, on this case the [i32], not the outer [Option]
-        #[mapper(opt(iter(with = field7.to_string())))]
-        field7: Option<Vec<String>>,
+        /// `field10` will contain the inner field, on this case the [i32], not the outer [Option]
+        #[mapper(opt(iter(with = field10.to_string())))]
+        field10: Option<Vec<i32>>,
     }
 }
 

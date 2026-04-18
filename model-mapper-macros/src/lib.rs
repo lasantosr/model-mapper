@@ -68,6 +68,9 @@ use proc_macro_error2::proc_macro_error;
 /// - `opt` _(optional)_: The field is an `Option` and the inner value shall be mapped **&#xb3;**
 /// - `iter` _(optional)_: The field is an iterator and the inner value shall be mapped **&#xb3;**
 /// - `map` _(optional)_: The field is a hashmap-like iterator and the inner value shall be mapped **&#xb3;**
+/// - `boxed` _(optional)_: The field is a `Box` and the inner value shall be mapped **&#xb3;**
+/// - `box` _(optional)_: The other field is a `Box` while the current field is not **&#xb3;**
+/// - `unbox` _(optional)_: The current field is a `Box` while the other field is not **&#xb3;**
 /// - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
 ///   property allows you to customize the behavior by providing a conversion function
 /// - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives

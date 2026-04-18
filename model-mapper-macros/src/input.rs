@@ -1,13 +1,13 @@
 #![allow(clippy::manual_unwrap_or_default)] // darling macros
 
 use darling::{
+    FromDeriveInput, FromField, FromMeta, FromVariant,
     ast::{Data, Fields},
     util::{Flag, Override, SpannedValue},
-    FromDeriveInput, FromField, FromMeta, FromVariant,
 };
-use proc_macro2::{Span, TokenStream};
-use proc_macro_crate::{crate_name, FoundCrate};
+use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro_error2::{abort_call_site, emit_error};
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::spanned::Spanned;
 
@@ -194,6 +194,15 @@ pub(super) struct MapperHint {
     /// Wether the field is a HashMap-like iter
     #[darling(default)]
     map: Option<SpannedValue<Override<Box<MapperHint>>>>,
+    /// Whether the field is boxed on both sides
+    #[darling(default)]
+    boxed: Option<SpannedValue<Override<Box<MapperHint>>>>,
+    /// Whether the target field is boxed and the source is not
+    #[darling(default, rename = "box")]
+    r#box: Option<SpannedValue<Override<Box<MapperHint>>>>,
+    /// Whether the source field is boxed and the target is not
+    #[darling(default)]
+    unbox: Option<SpannedValue<Override<Box<MapperHint>>>>,
 }
 
 #[derive(Debug, FromMeta, Clone)]
@@ -595,10 +604,20 @@ impl ItemFieldInput {
             if self.hint.map.is_some() {
                 hint_count += 1;
             }
+            if self.hint.boxed.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.r#box.is_some() {
+                hint_count += 1;
+            }
+            if self.hint.unbox.is_some() {
+                hint_count += 1;
+            }
             if hint_count > 1 {
                 emit_error!(
                     span,
-                    "Only one of 'with', 'into_with'/'from_with', 'opt', 'iter' or 'map' can be set"
+                    "Only one of 'with', 'into_with'/'from_with', 'opt', 'iter', 'map', 'boxed', 'box' or 'unbox' can \
+                     be set"
                 );
             }
         } else {
@@ -636,6 +655,15 @@ impl FieldReceiver {
             }
             if let Some(map) = self.hint.map.as_ref() {
                 emit_error!(map.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(boxed) = self.hint.boxed.as_ref() {
+                emit_error!(boxed.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(r#box) = self.hint.r#box.as_ref() {
+                emit_error!(r#box.span(), "Illegal attribute if 'when' is set")
+            }
+            if let Some(unbox) = self.hint.unbox.as_ref() {
+                emit_error!(unbox.span(), "Illegal attribute if 'when' is set")
             }
             // Verify there same type is not duplicated
             let paths = self.items.iter().map(|i| &i.path).collect::<Vec<_>>();
@@ -750,11 +778,7 @@ impl FieldReceiver {
         derive_path: &syn::TypePath,
     ) -> TokenStream {
         let into = build_into_for_inner(from, is_try, ident, self.hint_for(derive_path));
-        if is_try {
-            quote!(#into?)
-        } else {
-            into
-        }
+        if is_try { quote!(#into?) } else { into }
     }
 }
 
@@ -833,6 +857,59 @@ fn build_into_for_inner(from: bool, is_try: bool, ident: &syn::Ident, hint: Opti
                 );
             } else {
                 return quote!(#ident.into_iter().map(|(k, #ident)| (k, #inner)).collect());
+            }
+        } else if hint.boxed.is_some() || hint.r#box.is_some() || hint.unbox.is_some() {
+            let (is_input_boxed, is_output_boxed) = if hint.boxed.is_some() {
+                (true, true)
+            } else if hint.r#box.is_some() {
+                if from { (true, false) } else { (false, true) }
+            } else {
+                if from { (false, true) } else { (true, false) }
+            };
+
+            let hint_opt = hint
+                .boxed
+                .as_ref()
+                .or(hint.r#box.as_ref())
+                .or(hint.unbox.as_ref())
+                .unwrap();
+            let inner;
+            if let Some(inner_hint) = hint_opt.as_ref().as_ref().explicit() {
+                inner = build_into_for_inner(from, is_try, ident, Some(inner_hint));
+            } else {
+                inner = build_into_for_inner(from, is_try, ident, None);
+            }
+
+            let input_expr = if is_input_boxed {
+                quote!(*#ident)
+            } else {
+                quote!(#ident)
+            };
+
+            if is_try {
+                if is_output_boxed {
+                    return quote!({
+                        let #ident = #input_expr;
+                        #inner.map(|v| std::boxed::Box::new(v))
+                    });
+                } else {
+                    return quote!({
+                        let #ident = #input_expr;
+                        #inner
+                    });
+                }
+            } else {
+                if is_output_boxed {
+                    return quote!({
+                        let #ident = #input_expr;
+                        std::boxed::Box::new(#inner)
+                    });
+                } else {
+                    return quote!({
+                        let #ident = #input_expr;
+                        #inner
+                    });
+                }
             }
         }
     }
