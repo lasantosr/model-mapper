@@ -1,0 +1,5 @@
+error: Cannot mix single-type attributes directly on the struct/enum with multi-type `derive` items
+ --> tests/ui/fail/mix_single_multi_struct.rs:4:15
+  |
+4 | #[mapper(ty = "Target", derive(from, ty = "Target"))]
+  |               ^^^^^^^^

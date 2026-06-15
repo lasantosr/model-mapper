@@ -1,0 +1,5 @@
+error: 'from_with' is not allowed on an INTO/TRY_INTO mapping direction
+  --> tests/ui/fail/from_with_on_into_struct.rs:10:26
+   |
+10 |     #[mapper(from_with = "my_func")]
+   |                          ^^^^^^^^^

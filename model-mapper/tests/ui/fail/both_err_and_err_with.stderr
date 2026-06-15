@@ -1,0 +1,5 @@
+error: Only one of 'err' or 'err_with' can be set
+  --> tests/ui/fail/both_err_and_err_with.rs:10:20
+   |
+10 |     #[mapper(err = "my_err", err_with = "my_err_fn")]
+   |                    ^^^^^^^^

@@ -1,0 +1,5 @@
+error: Enable `default` here required for `into` and `try_into` mappings
+  --> tests/ui/fail/skip_variant_no_default.rs:10:14
+   |
+10 |     #[mapper(skip)]
+   |              ^^^^

@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use model_mapper::Mapper;
 
@@ -57,5 +57,8 @@ fn main() {
     let bar = BarEnumComplex::from(source.clone());
     let mapped: FooEnumComplex = bar.into();
 
-    assert_eq!(source, mapped);
+    assert_eq!(
+        source, mapped,
+        "Mapping from and back into should yield the original value"
+    );
 }

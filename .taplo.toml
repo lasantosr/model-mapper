@@ -8,7 +8,7 @@ column_width = 120
 
 [[rule]]
 #include = ["Cargo.toml", "**/Cargo.toml"]
-keys = ["dependencies", "dev-dependencies", "workspace.dependencies"]
+keys = ["dependencies", "dev-dependencies", "workspace.dependencies", "workspace.lints.rust", "workspace.lints.clippy"]
 
 [rule.formatting]
 reorder_keys = true

@@ -1,0 +1,58 @@
+---
+source: model-mapper-macros/src/tests/mod.rs
+expression: formatted
+---
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl From<Target> for Source {
+    fn from(other: Target) -> Self {
+        let Target { x } = other;
+        Self {
+            x: x
+                .map(|x| {
+                    x
+                        .into_iter()
+                        .map(|x| {
+                            x
+                                .into_iter()
+                                .map(|(k, x)| (
+                                    k,
+                                    {
+                                        let x = *x;
+                                        ::model_mapper::private::Box::new(Into::into(x))
+                                    },
+                                ))
+                                .collect()
+                        })
+                        .collect()
+                }),
+        }
+    }
+}
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl From<Source> for Target {
+    fn from(other: Source) -> Self {
+        let Source { x } = other;
+        Target {
+            x: x
+                .map(|x| {
+                    x
+                        .into_iter()
+                        .map(|x| {
+                            x
+                                .into_iter()
+                                .map(|(k, x)| (
+                                    k,
+                                    {
+                                        let x = *x;
+                                        ::model_mapper::private::Box::new(Into::into(x))
+                                    },
+                                ))
+                                .collect()
+                        })
+                        .collect()
+                }),
+        }
+    }
+}

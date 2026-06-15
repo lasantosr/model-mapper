@@ -1,0 +1,7 @@
+error[E0560]: struct `Target` has no field named `b`
+  --> tests/ui/fail/strict_extra_fields.rs:11:5
+   |
+11 |     b: i32,
+   |     ^ `Target` does not have this field
+   |
+   = note: all struct fields are already assigned

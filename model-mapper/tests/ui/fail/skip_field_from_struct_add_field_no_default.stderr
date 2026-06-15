@@ -1,0 +1,5 @@
+error: Enable `default` here or include `custom` on `from` and `try_from` mappings
+ --> tests/ui/fail/skip_field_from_struct_add_field_no_default.rs:8:43
+  |
+8 | #[mapper(from, ty = "Target", add(field = "x"))]
+  |                                           ^^^

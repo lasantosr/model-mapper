@@ -1,0 +1,5 @@
+error: 'from_with' is not allowed on an INTO/TRY_INTO mapping direction
+  --> tests/ui/fail/from_with_on_into_enum.rs:10:28
+   |
+10 |     A(#[mapper(from_with = "my_func")] i32),
+   |                            ^^^^^^^^^

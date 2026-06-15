@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use model_mapper::Mapper;
 

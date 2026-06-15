@@ -1,0 +1,5 @@
+error: This type is duplicated: 'Target'
+ --> tests/ui/fail/duplicate_derive_target.rs:6:57
+  |
+6 | #[mapper(derive(from, ty = "Target"), derive(from, ty = "Target"))]
+  |                                                         ^^^^^^^^

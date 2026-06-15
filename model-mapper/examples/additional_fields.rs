@@ -1,4 +1,4 @@
-#![allow(dead_code, unused)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use model_mapper::Mapper;
 
@@ -44,7 +44,7 @@ struct Bar2 {
 #[derive(Mapper)]
 #[mapper(
     // We can also implement a custom function that will require the additional fields at runtime, providing types
-    into(custom = "into_foo_custom"), 
+    into(custom = "into_foo_custom"),
     ty = Foo,
     add(field = field3, ty = i64),
     add(field = field4, ty = "Option<String>"), // we might need to quote types

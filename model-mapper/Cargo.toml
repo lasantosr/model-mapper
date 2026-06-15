@@ -14,6 +14,11 @@ default = ["std"]
 
 # Requires a dependency on the Rust standard library
 std = ["dep:anyhow"]
+alloc = []
+
+[[example]]
+name = "no_std"
+crate-type = ["lib"]
 
 [dependencies]
 model-mapper-macros = { workspace = true }
@@ -22,3 +27,7 @@ anyhow = { workspace = true, optional = true }
 
 [dev-dependencies]
 thiserror = { workspace = true }
+trybuild  = { workspace = true }
+
+[lints]
+workspace = true

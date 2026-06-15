@@ -1,0 +1,5 @@
+error: There is no derive defined for type: 'OtherTarget'
+ --> tests/ui/fail/override_target_without_derive.rs:8:24
+  |
+8 |     #[mapper(when(ty = "OtherTarget", rename = "x"))]
+  |                        ^^^^^^^^^^^^^

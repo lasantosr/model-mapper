@@ -1,0 +1,3 @@
+- `field_provider` fn signature when variants have added fields
+- Injected parameters via `add(field = "...", ty = "...")` in custom function mappings are now namespaced under the `input` identifier (e.g. `input.field_name`). Developers must now explicitly prefix injected parameters with `input.` when referencing them inside custom mapping expressions (`with`, `from_with`, `into_with`).
+- Local variables in scope inside custom mapping expressions (`with`, `from_with`, `into_with`) are now source-centric (matching the field names defined on the source/input struct of the conversion, rather than the target struct). If a field is renamed, the expression must refer to it by its source name in `from` mappings, and its target name in `into` mappings.

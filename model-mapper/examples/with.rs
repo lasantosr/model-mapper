@@ -1,38 +1,38 @@
-#![allow(dead_code, clippy::disallowed_names)]
+#![allow(dead_code, clippy::restriction, clippy::disallowed_names, reason = "example")]
 
 use model_mapper::Mapper;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Foo {
-    pub field1: i32,
-    pub field2: String,
-    pub field3: i32,
+struct Foo {
+    field1: i32,
+    field2: String,
+    field3: i32,
 }
 
 #[derive(Mapper, Debug, PartialEq)]
 #[mapper(from, ty = Foo)]
-pub struct Bar {
+struct Bar {
     // We can use any expression using the fields of the other type
     #[mapper(with = field1 + 1)]
-    pub field1: i32,
+    field1: i32,
     // Or we can pass a function that takes a reference to the field
     #[mapper(with = String::len)]
-    pub field2: usize,
+    field2: usize,
     // Or one that takes ownership of the field
     #[mapper(with = i32::abs)]
-    pub field3: i32,
+    field3: i32,
 }
 
 #[derive(Mapper, Debug, PartialEq)]
 #[mapper(from, into, ty = Foo)]
-pub struct BarMultiple {
+struct BarMultiple {
     // When deriving both from and into, we can specify different custom logic for each direction
     #[mapper(from_with = field1 + 1, into_with = field1 - 1)]
-    pub field1: i32,
-    pub field2: String,
+    field1: i32,
+    field2: String,
     // And mix with a single expression for both ways as well
     #[mapper(with = 0 - field3)]
-    pub field3: i32,
+    field3: i32,
 }
 
 fn main() {

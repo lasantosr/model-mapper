@@ -1,0 +1,5 @@
+error: 'err' and 'err_with' are only valid when 'try_from' or 'try_into' is set
+  --> tests/ui/fail/err_on_infallible.rs:10:20
+   |
+10 |     #[mapper(err = "my_err")]
+   |                    ^^^^^^^^

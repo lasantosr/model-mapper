@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -28,9 +28,9 @@ mod using_with {
     struct Bar2 {
         /// Or if we're deriving both 'from' and 'into', we can provide functions for both of them.
         /// We can specify a path to a function receiving the field, or provide an expression using any field
-        #[mapper(from_with = parse_field_1, into_with = format!("{},{}", field1, field2))]
+        #[mapper(from_with = parse_field_1, into_with = format!("{field1},{field2}"))]
         field1: i32,
-        /// This field doesn't because [i32] implements [TryFrom<i64>]
+        /// This field doesn't because [i32] implements [`TryFrom<i64>`]
         field2: i32,
     }
 
@@ -63,10 +63,10 @@ mod wrapped_types {
         /// we need to give some hint to the macro
         #[mapper(opt)]
         field1: Option<i32>,
-        /// there are more hints like for iterators, that works with any [IntoIterator] and [FromIterator] combination
+        /// there are more hints, iter works with any [`IntoIterator`] and [`FromIterator`] combination
         #[mapper(iter)]
         field2: HashSet<i32>,
-        /// or for [HashMap], which are just iterators of 2-element tuples
+        /// or for [`HashMap`], which are just iterators of 2-element tuples
         #[mapper(map)]
         field3: HashMap<String, i32>,
         /// also for [Box]ed values

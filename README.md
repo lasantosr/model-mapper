@@ -3,12 +3,13 @@
 A powerful Rust macro to generate boilerplate-free declarations of `From`, `Into`, `TryFrom`, and `TryInto` traits for
 converting between structs and enums.
 
-It is designed to handle common patterns like detailed DTOs to internal entities, handling optional fields, nested
-collections, and even disparate generic types.
+It is designed to handle common patterns like DTOs to internal entities, optional fields, nested collections, and
+disparate generic types. It enforces structural correctness by default, surfacing mismatches as compilation errors.
 
 ## Features
 
 - **Zero Boilerplate**: Automatically implements `From`, `Into`, `TryFrom`, and `TryInto`.
+- **Compile-Time Safety**: Enforces structural correctness; errors on unmapped extra fields by default.
 - **Flexible Mapping**: Handle renamed fields, skipped fields, and additional fields.
 - **Custom Logic**: Inject custom conversion logic for specific fields using functions or expressions.
 - **Generics Support**: Seamless mapping between generic types with different parameters.
@@ -72,9 +73,13 @@ Would generate something like:
 impl UpdateProfileRequest {
     /// Builds a new [service::UpdateUserInput] from a [UpdateProfileRequest]
     pub fn into_update_user(self, user_id: i64) -> service::UpdateUserInput {
-        let UpdateProfileRequest { name } = self;
+        struct Input {
+            user_id: i64,
+        }
+        let input = Input { user_id };
+        let Self { name } = self;
         service::UpdateUserInput {
-            user_id,
+            user_id: input.user_id,
             surname: None,
             name: Into::into(name),
         }
@@ -92,58 +97,60 @@ The following attributes are available.
 
 - Type level attributes:
 
-  - `ty = PathType` _(**mandatory**)_: The other type to derive the conversion
-  - `from` _(optional)_: Whether to derive `From` the other type for self
+  - `ty = PathType` _(**mandatory**)_: The derived type to map to/from. Can be a string literal for complex
+    types (e.g. `ty = "Type<T>"`)
+  - `from` _(optional)_: Whether to derive `From` the derived type for the base type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-  - `into` _(optional)_: Whether to derive `From` self for the other type
+  - `into` _(optional)_: Whether to derive `From` the base type for the derived type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-  - `try_from` _(optional)_: Whether to derive `TryFrom` the other type for self
+  - `try_from` _(optional)_: Whether to derive `TryFrom` the derived type for the base type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-    - `err = TargetError` _(optional)_: Explicit target error type for fallible conversions.
+    - `err = TargetError` _(optional)_: Explicit error type for fallible conversions.
     - `accumulate` _(optional)_: Collect errors into `Vec<TargetError>` instead of short-circuiting on the first failure.
     - `accumulate = CustomAccumulator` _(optional)_: Collect errors into `CustomAccumulator` instead of `Vec`.
-  - `try_into` _(optional)_: Whether to derive `TryFrom` self for the other type
+  - `try_into` _(optional)_: Whether to derive `TryFrom` the base type for the derived type
     - `custom` _(optional)_: Derive a custom function instead of the trait
     - `custom = from_other` _(optional)_: Derive a custom function instead of the trait, with the given name
-    - `err = TargetError` _(optional)_: Explicit target error type for fallible conversions.
+    - `err = TargetError` _(optional)_: Explicit error type for fallible conversions.
     - `accumulate` _(optional)_: Collect errors into `Vec<TargetError>` instead of short-circuiting on the first failure.
     - `accumulate = CustomAccumulator` _(optional)_: Collect errors into `CustomAccumulator` instead of `Vec`.
   - `add` _(optional, multiple)_: Additional fields (for structs with named fields) or variants (for enums) the
-    other type has and this one doesn't **&#xb9;**
+    derived type has and the base type doesn't **&#xb9;**
     - `field = other_field` _(mandatory)_: The field or variant name
     - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
     - `default` _(optional)_: The field or variant will be populated using `Default::default()` (mandatory for enums,
       with or without value)
       - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
-  - `ignore_extra` _(optional)_: Whether to ignore all extra fields (for structs) or variants (for enums) of the other
-    type **&#xb2;**
+  - `ignore_extra` _(optional)_: Opt-out for compile-time safety. Ignore all extra fields (for structs) or variants
+    (for enums) of the derived type **&#xb2;**
 
 - Variant level attributes:
 
-  - `rename = OtherVariant` _(optional)_: To rename this variant on the other enum
-  - `add` _(optional, multiple)_: Additional fields of the variant that the other type variant has and this one
-    doesn't **&#xb9;**
+  - `rename = OtherVariant` _(optional)_: To rename this variant on the derived enum
+  - `add` _(optional, multiple)_: Additional fields of the variant that the derived variant has and the base
+    variant doesn't **&#xb9;**
     - `field = other_field` _(mandatory)_: The field name
     - `ty = bool` _(optional)_: The field type, mandatory for `into` and `try_into` if no default value is provided
     - `default` _(optional)_: The field or variant will be populated using `Default::default()`
       - `value = true` _(optional)_: The field or variant will be populated with the given expression instead
-  - `skip` _(optional)_: Whether to skip this variant because the other enum doesn't have it
+  - `skip` _(optional)_: Whether to skip this variant because the derived enum doesn't have it
     - `default` _(mandatory)_: The field or variant will be populated using `Default::default()`
       - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
-  - `ignore_extra` _(optional)_: Whether to ignore all extra fields of the other variant (only valid for _from_ and
+  - `ignore_extra` _(optional)_: Whether to ignore all extra fields of the derived variant (only valid for _from_ and
     _try_from_) **&#xb2;**
 
 - Field level attributes:
 
-  - `rename = other_name` _(optional)_: To rename this field on the other type
-  - `skip` _(optional)_: Whether to skip this field because the other type doesn't have it
+  - `rename = other_name` _(optional)_: To rename this field on the derived type
+  - `other_ty = T` _(optional)_: The type of this field in the derived type, if it differs from the base type's field.
+  - `skip` _(optional)_: Whether to skip this field because the derived type doesn't have it
     - `default` _(optional)_: The field or variant will be populated using `Default::default()`
       - `value = get_default_value()` _(optional)_: The field or variant will be populated with the given expression instead
   - `err = ErrorVal` _(optional)_: Map conversion failures for this field to the specific error value `ErrorVal`. Used for error erasure where the original error is discarded (e.g. mapping to a unit variant error like `AppError::InvalidStatus`).
-  - `err_with = MapFn` _(optional)_: Map conversion failures for this field using the helper function/callable `MapFn` (which can be a tuple variant constructor, a closure, or a function/method path). This preserves or maps the source error.
+  - `err_with = MapFn` _(optional)_: Map conversion failures for this field using the helper function/callable `MapFn` (which can be a tuple variant constructor, a closure, or a function/method path). This preserves or maps the original error.
 
 - Additional hints on how to map fields:
 
@@ -151,9 +158,9 @@ The following attributes are available.
   - `iter` _(optional)_: The field is an iterator and the inner value shall be mapped **&#xb3;**
   - `map` _(optional)_: The field is a hashmap-like iterator and the inner value shall be mapped **&#xb3;**
   - `boxed` _(optional)_: The field is a `Box` and the inner value shall be mapped **&#xb3;**
-  - `box` _(optional)_: The other field is a `Box` while the current field is not **&#xb3;**
-  - `unbox` _(optional)_: The current field is a `Box` while the other field is not **&#xb3;**
-  - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the other, this
+  - `box` _(optional)_: The derived field is a `Box` while the base field is not **&#xb3;**
+  - `unbox` _(optional)_: The base field is a `Box` while the derived field is not **&#xb3;**
+  - `with = mod::my_function` _(optional)_: If the field type doesn't implement `Into` or `TryInto` the derived field, this
     property allows you to customize the behavior by providing a conversion function
   - `into_with = mod::my_function` _(optional)_: The same as above but only for the `into` or `try_into` derives
   - `from_with = mod::my_function` _(optional)_: The same as above but only for the `from` or `try_from` derives
@@ -165,6 +172,25 @@ a custom function will be required instead. When deriving `into` or `try_into`, 
 in order to properly populate it.
 
 **&#xb3;** Hints can be nested, for example: `opt(vec)`, `vec(opt(with = "my_custom_fn"))`
+
+### Scope & Evaluation Order
+
+When writing custom mapping expressions (such as `with`, `from_with`, or `into_with`) or configuring skipped/added fields with `default` values, the following scope and evaluation order behaviors apply:
+
+#### Variable Scope & Namespaces
+
+- **Source Fields:** The local variables in scope inside custom expressions correspond to the fields of the input struct of the mapping:
+  - In `from` and `try_from` mappings, fields are referenced by their names in the **remote type** (`ty`).
+  - In `into` and `try_into` mappings, fields are referenced by their names in the **local type** (the struct deriving `Mapper`).
+- **Added Fields:** Added fields injected as custom function parameters are namespaced under the local `input` structure. Access them using the `input.` prefix (e.g., `input.user_id`).
+
+#### Evaluation & Consumption Order (Borrow-Before-Move)
+
+To allow custom mapping expressions and default value expressions (e.g., `skip(default(value = ...))` or `add(field = ..., default(value = ...))`) to safely reference or borrow other source fields before they are moved/consumed, conversions are evaluated in a strict priority order:
+
+1. **Added fields** with default expressions are evaluated first.
+2. **Custom-mapped and skipped fields** with default expressions are evaluated next.
+3. **Regular fields** (which move/consume the source variables) are evaluated last.
 
 ### Multiple derives
 
@@ -188,6 +214,17 @@ and must set the `ty` they refer to:
 #[mapper(when(ty = OtherType, with = TryIntoMapper::try_map_removing_option))]
 #[mapper(when(ty = YetAnotherType, skip(default)))]
 ```
+
+## `no_std` Support
+
+`model-mapper` supports `no_std` environments out of the box. You can configure it depending on your allocation needs:
+
+- **Pure `no_std` (No Allocation)**: If you don't use anything with a `Box` or a `Vec`, simply disable default features.
+- **`no_std` with `alloc`**: If you are in a `no_std` environment but have a heap allocator (`alloc`) available, disable default features and enable the `alloc` feature flag.
+- **Full `std` (Default)**: Regular standard library environments can just use the default features.
+
+> [!NOTE]
+> Fallible conversions (`TryFrom` and `TryInto` derives) are fully supported in `no_std` environments when a custom error type and/or custom error accumulator is specified (as the default error type, `anyhow::Error`, requires the standard library).
 
 ## License
 

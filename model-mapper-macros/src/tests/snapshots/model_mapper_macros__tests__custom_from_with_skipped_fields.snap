@@ -1,0 +1,19 @@
+---
+source: model-mapper-macros/src/tests/mod.rs
+expression: formatted
+---
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl Source {
+    ///Builds a new [Source] from a [Target]
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_target(from: Target, y: String) -> Self {
+        struct SourceInput {
+            y: String,
+        }
+        let input = SourceInput { y };
+        let Target { x } = from;
+        let y: String = input.y;
+        Self { y: y, x: Into::into(x) }
+    }
+}

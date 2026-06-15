@@ -1,0 +1,5 @@
+error: Enable `default` here or include `custom` on `from` and `try_from` mappings
+  --> tests/ui/fail/skip_field_no_default.rs:10:14
+   |
+10 |     #[mapper(skip)]
+   |              ^^^^

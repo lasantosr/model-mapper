@@ -1,0 +1,58 @@
+---
+source: model-mapper-macros/src/tests/mod.rs
+expression: formatted
+---
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl Source {
+    ///Builds a new [Source] from a [Target]
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_target(from: Target) -> Self {
+        let Target { x, y } = from;
+        Self {
+            x: Into::into(x),
+            y: Into::into(y),
+        }
+    }
+}
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl Source {
+    ///Tries to build a new [Source] from a [Target]
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_from_target(from: Target) -> Result<Self, CustomError> {
+        let Target { x, y } = from;
+        {
+            let x = TryInto::try_into(x)?;
+            let y = TryInto::try_into(y)?;
+            ::core::result::Result::Ok(Self { x: x, y: y })
+        }
+    }
+}
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl Source {
+    ///Builds a new [Target] from this [Source]
+    #[allow(clippy::too_many_arguments)]
+    pub fn into_target(self) -> Target {
+        let Source { x, y } = self;
+        Target {
+            x: Into::into(x),
+            y: Into::into(y),
+        }
+    }
+}
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl Source {
+    ///Tries to build a new [Target] from this [Source]
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_into_target(self) -> Result<Target, CustomError> {
+        let Source { x, y } = self;
+        {
+            let x = TryInto::try_into(x)?;
+            let y = TryInto::try_into(y)?;
+            ::core::result::Result::Ok(Target { x: x, y: y })
+        }
+    }
+}

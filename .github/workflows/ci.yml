@@ -49,3 +49,19 @@ jobs:
 
       - name: Compile and run examples
         run: for f in model-mapper/examples/*.rs; do cargo run --example $(basename "$f" .rs); done
+
+      - name: Check no_std compatibility
+        run: |
+          # 1. Compile the library under no_std (no-default-features)
+          cargo build --no-default-features
+
+          # 2. Check the no_std example (configured as a library example in Cargo.toml)
+          cargo check --example no_std --no-default-features
+
+          # 3. Check the no_std UI test file as a library, verifying the macro-expansion and the panic handler block
+          rustc model-mapper/tests/ui/pass/no_std_guard.rs --crate-type=lib --edition=2024 -L target/debug/deps --extern model_mapper=target/debug/libmodel_mapper.rlib --cfg no_std_testing --cap-lints allow --out-dir target/debug/
+
+      - name: Verify documentation
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings

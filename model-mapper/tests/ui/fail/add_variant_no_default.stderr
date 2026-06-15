@@ -1,0 +1,5 @@
+error: Missing mandatory `default` for enums when mapping `from` or `try_from`
+ --> tests/ui/fail/add_variant_no_default.rs:8:43
+  |
+8 | #[mapper(from, ty = "Target", add(field = "A"))]
+  |                                           ^^^

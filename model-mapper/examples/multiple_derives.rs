@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use model_mapper::Mapper;
 
@@ -28,20 +28,21 @@ struct StructC {
 }
 
 fn main() {
-    let a = StructA {
+    let struct_a = StructA {
         id: 1,
         name: "name".into(),
         tag: "tag".into(),
     };
 
-    let b = StructB::from(a);
-    let c: StructC = b.into();
+    let struct_b = StructB::from(struct_a);
+    let struct_c: StructC = struct_b.into();
 
     assert_eq!(
         StructC {
             id: 1,
             name: "name".into(),
         },
-        c
+        struct_c,
+        "Mapped struct does not match expected value"
     );
 }

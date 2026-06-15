@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(unused, dead_code, clippy::restriction, reason = "example")]
 
 use model_mapper::Mapper;
 
@@ -48,5 +48,5 @@ fn main() {
     let bar = BarEnum::from(source.clone());
     let mapped: FooEnum = bar.into();
 
-    assert_eq!(source, mapped);
+    assert_eq!(source, mapped, "Mapped enum does not match expected value");
 }

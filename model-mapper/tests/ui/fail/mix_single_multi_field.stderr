@@ -1,0 +1,5 @@
+error: Cannot mix single-type attributes directly on the field with multi-type `when` items
+ --> tests/ui/fail/mix_single_multi_field.rs:8:23
+  |
+8 |     #[mapper(rename = "y", when(ty = "Target", rename = "y"))]
+  |                       ^^^

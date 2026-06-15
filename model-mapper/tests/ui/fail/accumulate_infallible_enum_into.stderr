@@ -1,0 +1,5 @@
+error: accumulate is only valid for try_from / try_into
+ --> tests/ui/fail/accumulate_infallible_enum_into.rs:8:15
+  |
+8 | #[mapper(into(accumulate), ty = "Target")]
+  |               ^^^^^^^^^^

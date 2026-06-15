@@ -1,0 +1,52 @@
+---
+source: model-mapper-macros/src/tests/mod.rs
+expression: formatted
+---
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl From<Target> for Source {
+    fn from(other: Target) -> Self {
+        let Target { a, b, c, d, e, f } = other;
+        Self {
+            a: a.map(|a| Into::into(a)),
+            b: b.into_iter().map(|b| Into::into(b)).collect(),
+            c: c.into_iter().map(|(k, c)| (k, Into::into(c))).collect(),
+            d: {
+                let d = *d;
+                ::model_mapper::private::Box::new(Into::into(d))
+            },
+            e: {
+                let e = *e;
+                Into::into(e)
+            },
+            f: {
+                let f = f;
+                ::model_mapper::private::Box::new(Into::into(f))
+            },
+        }
+    }
+}
+#[automatically_derived]
+#[allow(non_shorthand_field_patterns, unused_variables)]
+impl From<Source> for Target {
+    fn from(other: Source) -> Self {
+        let Source { a, b, c, d, e, f } = other;
+        Target {
+            a: a.map(|a| Into::into(a)),
+            b: b.into_iter().map(|b| Into::into(b)).collect(),
+            c: c.into_iter().map(|(k, c)| (k, Into::into(c))).collect(),
+            d: {
+                let d = *d;
+                ::model_mapper::private::Box::new(Into::into(d))
+            },
+            e: {
+                let e = e;
+                ::model_mapper::private::Box::new(Into::into(e))
+            },
+            f: {
+                let f = *f;
+                Into::into(f)
+            },
+        }
+    }
+}

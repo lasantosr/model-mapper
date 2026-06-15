@@ -1,0 +1,5 @@
+error: Illegal attribute for enums
+ --> tests/ui/fail/add_variant_type_override.rs:8:53
+  |
+8 | #[mapper(from, ty = "Target", add(field = "A", ty = "i32"))]
+  |                                                     ^^^^^

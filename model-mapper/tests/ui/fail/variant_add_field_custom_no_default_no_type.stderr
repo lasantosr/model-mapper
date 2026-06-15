@@ -1,0 +1,5 @@
+error: Provide a field type with `ty` if the field is not `default` to map `into` and `try_into`
+  --> tests/ui/fail/variant_add_field_custom_no_default_no_type.rs:10:26
+   |
+10 |     #[mapper(add(field = "x"))]
+   |                          ^^^

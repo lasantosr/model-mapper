@@ -1,0 +1,5 @@
+error: Use 'err_with' instead of 'err' for closure-based error mapping
+  --> tests/ui/fail/err_closure.rs:10:20
+   |
+10 |     #[mapper(err = "|e| MyError")]
+   |                    ^^^^^^^^^^^^^

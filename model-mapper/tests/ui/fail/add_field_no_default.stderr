@@ -1,0 +1,5 @@
+error: Enable `default` here or include `custom` on `into` and `try_into` mappings
+ --> tests/ui/fail/add_field_no_default.rs:8:43
+  |
+8 | #[mapper(into, ty = "Target", add(field = "x"))]
+  |                                           ^^^

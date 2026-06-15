@@ -1,0 +1,5 @@
+error: Only one of 'with', 'into_with'/'from_with', 'opt', 'iter', 'map', 'boxed', 'box' or 'unbox' can be set
+  --> tests/ui/fail/multiple_hints.rs:10:19
+   |
+10 |     #[mapper(opt, iter)]
+   |                   ^^^^

@@ -1,44 +1,44 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::restriction, clippy::enum_variant_names, reason = "example")]
 
 use std::convert::TryFrom;
 
 use model_mapper::Mapper;
 
 // The raw input DTO
-pub struct RawUser {
-    pub age: i64,
-    pub status: String,
-    pub email: String,
+struct RawUser {
+    age: i64,
+    status: String,
+    email: String,
 }
 
 // Short-circuiting try_from conversion
 #[derive(Debug, Mapper)]
 #[mapper(try_from(err = AppError), ty = RawUser)]
-pub struct UserShortCircuit {
+struct UserShortCircuit {
     // Implicit conversion: maps TryFromIntError automatically using AppError's From implementation
-    pub age: u8,
+    age: u8,
     // Error erasure: maps StatusError to AppError::InvalidStatus, discarding the source error
     #[mapper(err = AppError::InvalidStatus)]
-    pub status: Status,
+    status: Status,
     // Error mapping: maps EmailError to AppError::InvalidEmail using a custom mapping closure
     #[mapper(err_with = |e: EmailError| AppError::InvalidEmail(e.to_string()))]
-    pub email: Email,
+    email: Email,
 }
 
 // Accumulating try_from conversion
 #[derive(Debug, Mapper)]
 #[mapper(try_from(err = AppError, accumulate), ty = RawUser)]
-pub struct UserAccumulated {
-    pub age: u8,
+struct UserAccumulated {
+    age: u8,
     #[mapper(err = AppError::InvalidStatus)]
-    pub status: Status,
+    status: Status,
     #[mapper(err_with = |e: EmailError| AppError::InvalidEmail(e.to_string()))]
-    pub email: Email,
+    email: Email,
 }
 
 // Custom error enum styled with thiserror
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
-pub enum AppError {
+enum AppError {
     #[error("Invalid age format: {0}")]
     InvalidAge(#[from] std::num::TryFromIntError),
 
@@ -50,11 +50,11 @@ pub enum AppError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Email(String);
+struct Email(String);
 
 #[derive(Debug, thiserror::Error, Clone, Copy, PartialEq, Eq)]
 #[error("email must contain @")]
-pub struct EmailError;
+struct EmailError;
 
 impl TryFrom<String> for Email {
     type Error = EmailError;
@@ -69,14 +69,14 @@ impl TryFrom<String> for Email {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Status {
+enum Status {
     Active,
     Inactive,
 }
 
 #[derive(Debug, thiserror::Error, Clone, Copy, PartialEq, Eq)]
 #[error("unknown status")]
-pub struct StatusError;
+struct StatusError;
 
 impl TryFrom<String> for Status {
     type Error = StatusError;
@@ -100,7 +100,10 @@ fn main() {
     // Under short-circuiting error handling, the first conversion error is returned immediately
     let result = UserShortCircuit::try_from(raw_invalid);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), AppError::InvalidAge(_)));
+    assert!(matches!(
+        result.expect_err("conversion should fail for invalid RawUser age"),
+        AppError::InvalidAge(_)
+    ));
 
     let raw_all_invalid = RawUser {
         age: -5,
@@ -111,7 +114,7 @@ fn main() {
     // Under error accumulation, all field conversion errors are collected into a Vec
     let result_accum = UserAccumulated::try_from(raw_all_invalid);
     assert!(result_accum.is_err());
-    let errors = result_accum.unwrap_err();
+    let errors = result_accum.expect_err("conversion should fail for all invalid RawUser fields");
     assert_eq!(errors.len(), 3);
     assert!(matches!(errors[0], AppError::InvalidAge(_)));
     assert_eq!(errors[1], AppError::InvalidStatus);
@@ -124,7 +127,8 @@ fn main() {
         email: "bob@example.com".to_string(),
     };
 
-    let happy_user = UserAccumulated::try_from(raw_happy).unwrap();
+    let happy_user = UserAccumulated::try_from(raw_happy)
+        .expect("RawUser with valid fields should successfully map to UserAccumulated");
     assert_eq!(happy_user.age, 42);
     assert_eq!(happy_user.status, Status::Active);
     assert_eq!(happy_user.email, Email("bob@example.com".to_string()));

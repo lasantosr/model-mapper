@@ -1,0 +1,12 @@
+excessive-nesting-threshold = 5
+too-many-arguments-threshold = 15
+too-many-lines-threshold = 150
+
+# Relax some lints on tests
+allow-dbg-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-print-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-large-stack-frames-in-tests = true
+allow-useless-vec-in-tests = true
