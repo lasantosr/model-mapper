@@ -1,0 +1,46 @@
+Cargo.toml
+  h_e5596228a2372c 21,23,32
+README.md
+  h_e5596228a2372c 7,12,127
+model-mapper-macros/src/model_mapper.rs
+  h_e5596228a2372c 3,5,8,16-17,22-26,28,30-31
+TODO.md
+  h_e5596228a2372c 1-15
+model-mapper-macros/src/domain/config.rs
+  h_e5596228a2372c 1-249,251-279,281-312,314-342,344-1102
+model-mapper-macros/src/domain/mod.rs
+  h_e5596228a2372c 1-771
+model-mapper/examples/no_std.rs
+  h_e5596228a2372c 6-71,74-75,77-79,83-101
+model-mapper-macros/src/domain/parsing.rs
+  h_e5596228a2372c 1-476
+model-mapper/src/lib.rs
+  h_e5596228a2372c 91-95,97,115-117,120,123,126,130,133,138,144-145,149-150,156,160-161,165-168,177,185-188,200-220
+model-mapper/tests/asymmetry.rs
+  h_e5596228a2372c 374,670,672
+model-mapper/Cargo.toml
+  h_e5596228a2372c 18-21,29
+.github/workflows/ci.yml
+  h_e5596228a2372c 52-67
+model-mapper-macros/src/expand.rs
+  h_e5596228a2372c 1-1864
+model-mapper-macros/Cargo.toml
+  h_e5596228a2372c 28-29
+model-mapper-macros/src/lib.rs
+  h_e5596228a2372c 2,8-10,51-52
+model-mapper-macros/src/domain/typestate.rs
+  h_e5596228a2372c 1-135
+model-mapper-macros/src/domain/components.rs
+  h_e5596228a2372c 1-348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f4c47ef613174a4254b525569b749ddd9b116060",
+  "prompts": {},
+  "humans": {
+    "h_e5596228a2372c": {
+      "author": "Luis Alberto Santos <lasantosr.92@gmail.com>"
+    }
+  }
+}
