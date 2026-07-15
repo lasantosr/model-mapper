@@ -1,2 +1,17 @@
 [workspace]
 pr_draft = true
+# Disable tags, releases, and changelogs globally by default
+changelog_update = false
+git_release_enable = false
+git_tag_enable = false
+
+[[package]]
+name = "model-mapper"
+# Explicitly re-enable and configure everything ONLY for the main crate
+changelog_include = ["model-mapper-macros"]
+changelog_path = "CHANGELOG.md"
+changelog_update = true
+git_release_enable = true
+git_release_name = "v{{ version }}"
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
