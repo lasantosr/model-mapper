@@ -34,7 +34,7 @@ The scope is optional but helps organize the changelog. If provided, use one of 
 
 ### Breaking Changes
 
-If a change introduces a breaking API change, you must append a `!` after the type/scope to alert the release tooling (e.g., `feat!:`, `fix(core)!:`). You may also detail the breaking change in the PR description starting with `BREAKING CHANGE:`.
+If a change introduces a breaking API change, you must append a `!` after the type/scope to alert the release tooling (e.g., `feat!:`, `fix(lib)!:`). You may also detail the breaking change in the PR description starting with `BREAKING CHANGE:`.
 
 ---
 
