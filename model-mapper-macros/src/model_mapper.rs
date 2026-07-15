@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
 use darling::{
+    FromDeriveInput,
     ast::{Data, Fields},
     util::{Override, SpannedValue},
-    FromDeriveInput,
 };
 use heck::ToSnakeCase;
 use macro_field_utils::{FieldInfo, FieldsCollector, FieldsHelper, VariantsHelper};
-use proc_macro2::TokenStream;
 use proc_macro_error2::abort_if_dirty;
-use quote::{format_ident, quote, ToTokens};
+use proc_macro2::TokenStream;
+use quote::{ToTokens, format_ident, quote};
 use syn::{fold::Fold, parse_quote, visit::Visit};
 
 use crate::{input::*, type_path_ext::*};
@@ -273,7 +273,8 @@ fn derive_struct_from(
 
         // Implement the custom function
         if is_try {
-            let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) = get_error_and_accumulate_info(Override::as_ref(from).explicit());
+            let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) =
+                get_error_and_accumulate_info(Override::as_ref(from).explicit());
             let try_body = build_try_body(
                 true,
                 original_from_ty,
@@ -311,7 +312,8 @@ fn derive_struct_from(
             )
         }
     } else if is_try {
-        let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) = get_error_and_accumulate_info(Override::as_ref(from).explicit());
+        let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) =
+            get_error_and_accumulate_info(Override::as_ref(from).explicit());
         let try_body = build_try_body(
             true,
             original_from_ty,
@@ -482,7 +484,8 @@ fn derive_struct_into(
 
         // Implement the custom function
         if is_try {
-            let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) = get_error_and_accumulate_info(Override::as_ref(into).explicit());
+            let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) =
+                get_error_and_accumulate_info(Override::as_ref(into).explicit());
             let try_body = build_try_body(
                 false,
                 original_into_ty,
@@ -520,7 +523,8 @@ fn derive_struct_into(
             )
         }
     } else if is_try {
-        let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) = get_error_and_accumulate_info(Override::as_ref(into).explicit());
+        let (trait_error_ty, is_accumulate, custom_accumulator, err_ty) =
+            get_error_and_accumulate_info(Override::as_ref(into).explicit());
         let try_body = build_try_body(
             false,
             original_into_ty,
@@ -722,7 +726,15 @@ fn derive_enum_from(
 
             let variant_construction = quote!( #into_ty::#ident #into_fields );
             if is_try {
-                build_try_body(true, original_from_ty, &v.fields, variant_construction, is_acc, &custom_acc, &acc_err_ty)
+                build_try_body(
+                    true,
+                    original_from_ty,
+                    &v.fields,
+                    variant_construction,
+                    is_acc,
+                    &custom_acc,
+                    &acc_err_ty
+                )
             } else {
                 variant_construction
             }
@@ -987,7 +999,15 @@ fn derive_enum_into(
 
             let variant_construction = quote!( #into_ty::#ident #into_fields );
             if is_try {
-                build_try_body(false, original_into_ty, &v.fields, variant_construction, is_acc, &custom_acc, &acc_err_ty)
+                build_try_body(
+                    false,
+                    original_into_ty,
+                    &v.fields,
+                    variant_construction,
+                    is_acc,
+                    &custom_acc,
+                    &acc_err_ty
+                )
             } else {
                 variant_construction
             }
@@ -1173,15 +1193,15 @@ fn get_error_and_accumulate_info(
     let mut is_accumulate = false;
     let mut custom_accumulator = None;
 
-    if let Some(input) = derive_input {
-        if let Some(acc) = &input.accumulate {
-            is_accumulate = true;
-            match acc.as_ref() {
-                Override::Explicit(ty) => {
-                    custom_accumulator = Some(syn::Type::Path(ty.0.clone()));
-                }
-                Override::Inherit => {}
+    if let Some(input) = derive_input
+        && let Some(acc) = &input.accumulate
+    {
+        is_accumulate = true;
+        match acc.as_ref() {
+            Override::Explicit(ty) => {
+                custom_accumulator = Some(syn::Type::Path(ty.0.clone()));
             }
+            Override::Inherit => {}
         }
     }
 

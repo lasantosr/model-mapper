@@ -802,7 +802,6 @@ impl FieldReceiver {
         }
     }
 
-
     pub(super) fn skip_for(&self, derive_path: &syn::TypePath) -> Option<&Override<SkipInput>> {
         for item in &self.items {
             if item.path.as_ref() == derive_path {

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use darling::FromMeta;
-use syn::{fold::Fold, visit::Visit, TypePath};
+use syn::{TypePath, fold::Fold, visit::Visit};
 
 #[derive(Debug, Clone)]
 pub(crate) struct TypePathWrapper(pub(crate) syn::TypePath);

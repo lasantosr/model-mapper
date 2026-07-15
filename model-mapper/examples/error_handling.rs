@@ -128,6 +128,4 @@ fn main() {
     assert_eq!(happy_user.age, 42);
     assert_eq!(happy_user.status, Status::Active);
     assert_eq!(happy_user.email, Email("bob@example.com".to_string()));
-
-    println!("All error handling examples ran and verified successfully!");
 }
