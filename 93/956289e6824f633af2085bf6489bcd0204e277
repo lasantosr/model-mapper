@@ -1,0 +1,102 @@
+model-mapper/examples/renames.rs
+  h_e5596228a2372c 1,51
+model-mapper-macros/src/domain/components.rs
+  h_e5596228a2372c 1-348
+model-mapper/src/lib.rs
+  h_e5596228a2372c 91-95,97,115-117,120,123,126,130,133,138,144-145,149-150,156,160-161,165-168,177,185-188,198,200-220,250-252,259,261-269
+model-mapper/examples/skipped_fields.rs
+  h_e5596228a2372c 1
+model-mapper-macros/src/domain/parsing.rs
+  h_e5596228a2372c 1-483
+model-mapper-macros/src/expand.rs
+  h_e5596228a2372c 1-74,76-1430,1432-1679,1681-2446
+model-mapper/tests/generics.rs
+  h_e5596228a2372c 3,197,199-200,204,209-210
+model-mapper-macros/src/domain/config.rs
+  h_e5596228a2372c 1-245,247-274,276-307,309-336,338-1124
+model-mapper-macros/src/parse.rs
+  h_e5596228a2372c 1,7-16,24,27-31,37,39,41,47,50,53,56,59,62,65,72,75,78,81,84,87,90,98,100,102,108,111,114,117,120,128,131,134,137,140,148,150,152,158,161,164,167,170,173,176,184,187,190,193,196,199,202,209,212,215,218,221,224,227,230,233,240,243,246,253,255,258,265,271,285-291,294-300,308-312,324,327-330,367,371-374,390-394,397-401,409-410,412,434,445,452,455,457,477-480,493-494,507-510,512-513,521-525,539,547,565,577-578,581,588,634,692,717,723,730,732-733,739,746,748-749,755,762,764-765,771,796-797,803,812,815,830,834,845,849,851,859,870,881,889,899,907,920,944-945,952,962,965,973,976,979,985,993,996,999,1002,1013,1015,1020,1028,1032,1037-1038,1040,1048,1052,1064,1075,1083-1084,1096,1098,1112,1114-1121,1133,1140-1141,1146-1149,1160,1167-1168
+model-mapper/examples/ignore_extra_fields.rs
+  h_e5596228a2372c 1
+model-mapper/tests/hints.rs
+  h_e5596228a2372c 3,136-138,149-151,168
+TODO.md
+  h_e5596228a2372c 1-15
+model-mapper/examples/no_std.rs
+  h_e5596228a2372c 2,6-71,74-75,77-79,83-106
+model-mapper/examples/multiple_derives.rs
+  h_e5596228a2372c 1,31,37-38,45-46
+model-mapper/tests/scope_and_ordering.rs
+  h_e5596228a2372c 1-42,70-298
+model-mapper-macros/src/domain/mod.rs
+  h_e5596228a2372c 1-177,179-184,186-190,192-201,203-207,211,217,227,233,243,249,259,265,273-798
+clippy.toml
+  h_e5596228a2372c 1-12
+model-mapper/tests/asymmetry.rs
+  h_e5596228a2372c 3,45,374,399,478,555-556,562,670,672,807-808,818
+model-mapper/examples/generics.rs
+  h_e5596228a2372c 1
+model-mapper/tests/custom_functions.rs
+  h_e5596228a2372c 3,77,131-132,163,165-167,227,233
+model-mapper-macros/src/tests/mod.rs
+  h_e5596228a2372c 3-4,6,15,21,27,30,46,52,55,61,67,70,76-77
+model-mapper-macros/src/input.rs
+  h_e5596228a2372c 8-9,11,23,31,41,43,50,66,76,78,85,92,98,118,129,140,147,151,153,171,174,178,182,186,191,199
+model-mapper-macros/src/type_path_ext.rs
+  h_e5596228a2372c 1,7-8,21,29-30,65,76,89,97-98,100,110,115-117
+model-mapper/tests/compile_tests.rs
+  h_e5596228a2372c 1,4-6
+model-mapper-macros/src/lib.rs
+  h_e5596228a2372c 2,8-10,50-51,67,103,142-143
+.github/workflows/ci.yml
+  h_e5596228a2372c 52-67
+model-mapper/tests/ui/pass/no_std_guard.rs
+  h_e5596228a2372c 7-9,15,58,77,81,93,125
+Cargo.toml
+  h_e5596228a2372c 21,23,31-142
+model-mapper/tests/ignore_extra.rs
+  h_e5596228a2372c 1,3,262
+.taplo.toml
+  h_e5596228a2372c 11
+model-mapper/examples/different_types.rs
+  h_e5596228a2372c 1,31,33,66,69
+model-mapper/examples/exact_match.rs
+  h_e5596228a2372c 1,61-62
+README.md
+  h_e5596228a2372c 7,12,127,218-228
+model-mapper/tests/enum_mappings.rs
+  h_e5596228a2372c 3,13,71,77,87,97,109,119,145,151,171,183,197,209,243,249
+model-mapper/tests/renames.rs
+  h_e5596228a2372c 3,12-13,131,136,181
+model-mapper/examples/with.rs
+  h_e5596228a2372c 1
+model-mapper/tests/error_handling.rs
+  h_e5596228a2372c 3,17-18,35,44,53-54,135,154,161,163,169,172,183,190,192,198,200,208,210,220,222,232,235,248
+model-mapper-macros/src/model_mapper.rs
+  h_e5596228a2372c 3,5,8,10-12,16-17,19,22-26,28,30-31
+model-mapper-macros/src/domain/typestate.rs
+  h_e5596228a2372c 1-138
+model-mapper/examples/additional_fields.rs
+  h_e5596228a2372c 1
+model-mapper/Cargo.toml
+  h_e5596228a2372c 17,19-21,30-33
+model-mapper-macros/Cargo.toml
+  h_e5596228a2372c 27-31
+model-mapper/tests/multiple_targets.rs
+  h_e5596228a2372c 3,12-13,18-19,26,59-60,65-66,75,192,197,204
+model-mapper/examples/error_handling.rs
+  h_e5596228a2372c 1,104,117,131
+model-mapper/tests/struct_mappings.rs
+  h_e5596228a2372c 3,111-113,161,165,181,185,200,204,224,229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "93956289e6824f633af2085bf6489bcd0204e277",
+  "prompts": {},
+  "humans": {
+    "h_e5596228a2372c": {
+      "author": "Luis Alberto Santos <lasantosr.92@gmail.com>"
+    }
+  }
+}
